@@ -1,12 +1,12 @@
 // 시세 데이터 상태 관리
 
 import { create } from 'zustand';
-import type { Watch } from '@/types';
+import type { WatchWithPrice } from '@/types';
 
 interface PriceState {
-  watches: Watch[];
+  watches: WatchWithPrice[];
   loading: boolean;
-  setWatches: (watches: Watch[]) => void;
+  setWatches: (watches: WatchWithPrice[]) => void;
   setLoading: (loading: boolean) => void;
 }
 

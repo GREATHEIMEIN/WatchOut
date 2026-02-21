@@ -1,5 +1,5 @@
 # WATCHOUT — HANDOFF.md
-> **마지막 업데이트:** 2026-02-21 (SESSION 1 완료)
+> **마지막 업데이트:** 2026-02-21 (SESSION 2 완료 + Supabase 연결)
 > **현재 Phase:** Phase 1 — 앱 개발 시작
 
 ---
@@ -110,7 +110,7 @@ watchout/
 -- 10. reports: 신고
 ```
 
-*상세 스키마는 SESSION 2에서 확정*
+*상세 스키마: `supabase/migrations/00001_create_tables.sql` 참조*
 
 ---
 
@@ -161,7 +161,7 @@ export const COLORS = {
 - [x] 폴더 구조 세팅 (components/ui,price,trade,buyback,common + store + lib + types + crawlers)
 - [x] 디자인 시스템 상수 파일 (lib/constants.ts — COLORS, FONTS, SPACING, RADIUS, BRANDS)
 - [x] 포맷 유틸리티 (lib/format.ts — formatPrice, formatPriceShort, formatPercent)
-- [x] Supabase 클라이언트 설정 (lib/supabase.ts — placeholder URL)
+- [x] Supabase 클라이언트 설정 (lib/supabase.ts — .env 환경변수 연동 완료)
 - [x] TypeScript 타입 정의 (types/index.ts — Watch, TradePost, User 등)
 - [x] Zustand 스토어 생성 (store/useAuthStore.ts, store/usePriceStore.ts)
 - [x] Expo Router 탭 5개 구성 (홈/시세/즉시매입/시계거래/MY)
@@ -170,24 +170,28 @@ export const COLORS = {
 - [x] 각 탭 빈 화면 + Header 렌더링
 - [x] 필수 패키지 설치 (zustand, @supabase/supabase-js, @react-native-async-storage/async-storage)
 - [x] TypeScript 컴파일 검증 통과
-- [ ] Supabase 프로젝트 생성 (supabase.com에서 수동)
-- [ ] DB 스키마 생성
+- [x] DB 스키마 SQL 작성 (10개 테이블, 인덱스, 트리거)
+- [x] RLS 보안 정책 SQL 작성 (10개 테이블)
+- [x] Storage 버킷 SQL 작성 (trade-images, buyback-images, avatars)
+- [x] TypeScript 타입 DB 스키마와 동기화 (10개 Row + Insert 타입 + 조인 타입)
+- [x] Supabase 프로젝트 생성 + .env 환경변수 연동
+- [ ] Supabase에 마이그레이션 SQL 실행 (00001~00003)
 - [ ] 앱 화면 UI 개발 시작
 
 ---
 
 ## 🚀 다음 세션에서 할 일
 
-### SESSION 2: DB + 크롤러 (Day 2~4)
-1. Supabase 프로젝트 생성 (supabase.com에서 수동) → lib/supabase.ts에 실제 URL/KEY 적용
-2. Supabase DB 테이블 10개 생성 (SQL 마이그레이션)
-3. RLS 정책 설정
-4. Python 크롤러 3개 개발 (하이시간, Chrono24, 바이버)
+### SESSION 3: Supabase DB 적용 + 시세 화면 UI
+1. Supabase SQL Editor에서 마이그레이션 실행 (00001 → 00002 → 00003 순서)
+2. 시세 리스트 화면 (PriceScreen — 브랜드 필터, 검색, SparkLine)
+3. 시세 상세 화면 (price/[id].tsx — 차트, 가격 히스토리)
+4. Pretendard 폰트 적용
 
-### SESSION 3: 시세 화면 (Day 5~6)
-1. 시세 리스트 화면 (PriceScreen — 브랜드 필터, 검색, SparkLine)
-2. 시세 상세 화면 (price/[id].tsx — 차트, 가격 히스토리)
-3. Pretendard 폰트 적용
+### SESSION 4: 크롤러 (Day 5~6)
+1. Python 크롤러 3개 개발 (하이시간, Chrono24, 바이버)
+2. 크롤러 → Supabase DB 연동
+3. 스케줄러 설정
 
 ---
 

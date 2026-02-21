@@ -5,6 +5,47 @@
 
 ---
 
+## 2026-02-21 — SESSION 2: DB 스키마 + RLS + Storage + 타입
+
+### 완료
+- [x] 마이그레이션 SQL: `supabase/migrations/00001_create_tables.sql` (10개 테이블, 인덱스, 트리거)
+- [x] RLS 정책 SQL: `supabase/migrations/00002_rls_policies.sql` (10개 테이블 보안 정책)
+- [x] Storage 버킷 SQL: `supabase/migrations/00003_storage_buckets.sql` (3개 버킷)
+- [x] TypeScript 타입 확장: `types/index.ts` (10개 Row 타입 + Insert 타입 + 조인 타입)
+- [x] usePriceStore Watch → WatchWithPrice 타입 업데이트
+- [x] TypeScript 컴파일 검증 통과
+
+### 생성된 파일
+- `supabase/migrations/00001_create_tables.sql` — 테이블 10개
+- `supabase/migrations/00002_rls_policies.sql` — RLS 정책
+- `supabase/migrations/00003_storage_buckets.sql` — Storage 버킷 3개
+
+### 수정된 파일
+- `types/index.ts` — DB 스키마 기반 전면 확장
+- `store/usePriceStore.ts` — WatchWithPrice 타입으로 변경
+
+### DB 테이블 요약
+| 테이블 | 설명 |
+|--------|------|
+| users | 회원 프로필 (auth.users 참조, 자동 생성 트리거) |
+| watches | 시계 모델 마스터 |
+| watch_prices | 시세 히스토리 (일별, 소스별) |
+| trade_posts | 매물 등록 (시계 + 시계용품) |
+| buyback_requests | 즉시매입 신청 (비회원도 가능) |
+| collections | 내 컬렉션 (보유 시계) |
+| community_posts | 커뮤니티 게시글 |
+| comments | 댓글 (댓글 수 자동 카운트 트리거) |
+| messages | 1:1 메시지 |
+| reports | 신고 |
+
+### 메모
+- SQL은 Supabase 프로젝트 생성 후 SQL Editor에서 순서대로 실행
+- 또는 Supabase CLI (`supabase db push`)로 적용 가능
+- auth.users 가입 시 public.users 자동 생성 트리거 포함
+- watch_prices에 UNIQUE(watch_id, source, recorded_date) 제약으로 중복 방지
+
+---
+
 ## 2026-02-21 — SESSION 1: 프로젝트 초기화
 
 ### 완료
