@@ -1,13 +1,13 @@
-// 홈 탭 화면
+// MY 탭 화면
 
 import { StyleSheet, View } from 'react-native';
 import Header from '@/components/common/Header';
 import { COLORS } from '@/lib/constants';
 
-export default function HomeScreen() {
+export default function MyPageScreen() {
   return (
     <View style={styles.container}>
-      <Header title="WATCHOUT" />
+      <Header title="MY" />
     </View>
   );
 }
