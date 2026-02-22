@@ -5,6 +5,76 @@
 
 ---
 
+## 2026-02-22 — SESSION 4: 홈 화면 + 즉시매입 페이지
+
+### 완료
+- [x] Mock 타입 4개 추가 (types/index.ts — MockCommunityPost, MockTradeItem, MockAccessoryItem, MockNews)
+- [x] 더미 데이터 4개 배열 추가 (lib/mockData.ts — 커뮤니티 6개, 매물 3개, 용품 4개, 뉴스 3개)
+- [x] 홈 화면 전체 구현 (app/(tabs)/index.tsx)
+- [x] 즉시매입 안내 페이지 구현 (app/(tabs)/buyback.tsx)
+- [x] useBuybackStore 생성 (store/useBuybackStore.ts — 5단계 폼 상태)
+- [x] BuybackSheet 바텀시트 구현 (components/buyback/BuybackSheet.tsx)
+- [x] TypeScript 컴파일 검증 통과
+
+### 생성된 파일
+- `store/useBuybackStore.ts` — 즉시매입 신청 폼 Zustand 스토어
+- `components/buyback/BuybackSheet.tsx` — 5단계 바텀시트 (Modal 기반)
+
+### 수정된 파일
+- `types/index.ts` — Mock 타입 4개 추가
+- `lib/mockData.ts` — 커뮤니티/매물/용품/뉴스 더미 데이터 추가
+- `app/(tabs)/index.tsx` — 홈 화면 전체 구현 (빈 화면 → 250줄)
+- `app/(tabs)/buyback.tsx` — 즉시매입 안내 페이지 (빈 화면 → 350줄)
+
+### UI 구조
+- **홈 화면**: Header(WATCHOUT) → 빠른 메뉴 2x2 → 커뮤니티 최신글 3개 → 시계거래 매물 수평 스크롤 → 뉴스 3개 → 즉시매입 미니배너
+- **즉시매입**: Hero → Trust Badges 3열 → 매입 과정 타임라인 5단계 → 왜 WATCHOUT 4항목 → 브랜드 태그 → FAQ 아코디언 4개 → CTA
+- **BuybackSheet**: Modal(slide) → Progress bar → Step 1(브랜드) → Step 2(모델) → Step 3(컨디션+구성품) → Step 4(사진 UI) → Step 5(연락처) → 완료 화면
+
+### 메모
+- BuybackSheet는 React Native 내장 Modal 사용 (외부 라이브러리 불필요)
+- 사진 첨부는 UI placeholder만 (expo-image-picker 연동 추후)
+- community/collection 라우트 미구현 → Alert("준비 중")으로 처리
+- 빠른 메뉴는 모바일 최적화를 위해 v5(4열) 대신 2x2 그리드로 구현
+
+---
+
+## 2026-02-21 — SESSION 3: 시세 화면 UI 구현
+
+### 완료
+- [x] react-native-svg 패키지 설치
+- [x] Mock 데이터: `lib/mockData.ts` (v5 WATCHES 6개 → WatchWithPrice 타입)
+- [x] SparkLine 컴포넌트: `components/price/SparkLine.tsx` (react-native-svg Polyline)
+- [x] PriceCard 컴포넌트: `components/price/PriceCard.tsx` (시세 카드)
+- [x] 시세 리스트 화면: `app/(tabs)/price.tsx` (검색바, 브랜드 필터 칩, FlatList)
+- [x] 시세 상세 화면: `app/price/[id].tsx` (시계 정보 + 6주 바 차트)
+- [x] usePriceStore 확장 (searchQuery, selectedBrand, getFilteredWatches)
+- [x] app/_layout.tsx에 price/[id] 라우트 추가
+- [x] TypeScript 컴파일 검증 통과
+
+### 생성된 파일
+- `lib/mockData.ts` — v5 WATCHES 기반 더미 데이터 6개
+- `components/price/SparkLine.tsx` — SVG 미니 스파크라인 차트
+- `components/price/PriceCard.tsx` — 시세 카드 (이미지, 브랜드, SparkLine, 가격)
+- `app/price/[id].tsx` — 시세 상세 (정보 + 6주 바 차트)
+
+### 수정된 파일
+- `app/(tabs)/price.tsx` — 빈 화면 → 검색/필터/FlatList 구현
+- `app/_layout.tsx` — price/[id] Stack.Screen 추가
+- `store/usePriceStore.ts` — 검색/필터 상태 + getFilteredWatches 추가
+
+### UI 구조
+- **시세 리스트**: Header → 검색바 → 브랜드 필터 칩 (전체/Rolex/Omega/AP/Patek/Cartier) → 모델 수 → FlatList<PriceCard>
+- **시세 상세**: Header(뒤로가기) → 시계 아이콘 → 레퍼런스 → 가격(28pt) → 변동률 → 6주 바 차트
+- **바 차트**: 순수 View 기반 (react-native-chart-kit 미사용), 높이 비례 = ((price - min) / range) * 60 + 20
+
+### 메모
+- 바 차트는 외부 라이브러리 없이 View로 구현 (v5 차트가 단순 세로 막대)
+- 시계 이미지는 Ionicons watch-outline placeholder (추후 실제 이미지로 대체)
+- Pretendard 폰트 아직 미적용 → 다음 세션에서 적용 예정
+
+---
+
 ## 2026-02-21 — SESSION 2: DB 스키마 + RLS + Storage + 타입
 
 ### 완료

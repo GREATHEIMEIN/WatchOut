@@ -1,5 +1,5 @@
 # WATCHOUT — HANDOFF.md
-> **마지막 업데이트:** 2026-02-21 (SESSION 2 완료 + Supabase 연결)
+> **마지막 업데이트:** 2026-02-22 (SESSION 4 완료 — 홈 화면 + 즉시매입)
 > **현재 Phase:** Phase 1 — 앱 개발 시작
 
 ---
@@ -175,23 +175,37 @@ export const COLORS = {
 - [x] Storage 버킷 SQL 작성 (trade-images, buyback-images, avatars)
 - [x] TypeScript 타입 DB 스키마와 동기화 (10개 Row + Insert 타입 + 조인 타입)
 - [x] Supabase 프로젝트 생성 + .env 환경변수 연동
+- [x] react-native-svg 패키지 설치
+- [x] Mock 데이터 생성 (lib/mockData.ts — v5 WATCHES 6개)
+- [x] SparkLine 컴포넌트 (components/price/SparkLine.tsx — SVG Polyline)
+- [x] PriceCard 컴포넌트 (components/price/PriceCard.tsx — 시세 카드)
+- [x] 시세 리스트 화면 (app/(tabs)/price.tsx — 검색, 브랜드 필터, FlatList)
+- [x] 시세 상세 화면 (app/price/[id].tsx — 6주 바 차트)
+- [x] usePriceStore 확장 (검색/필터 상태 추가)
+- [x] app/_layout.tsx에 price/[id] 라우트 추가
+- [x] 홈 화면 UI (빠른 메뉴 2x2, 커뮤니티, 매물 스크롤, 뉴스, 미니배너)
+- [x] 더미 데이터 확장 (커뮤니티 6개, 매물 3개, 용품 4개, 뉴스 3개)
+- [x] Mock 타입 4개 추가 (MockCommunityPost, MockTradeItem, MockAccessoryItem, MockNews)
+- [x] 즉시매입 안내 페이지 (Hero, Trust Badges, 타임라인, FAQ, CTA)
+- [x] useBuybackStore (Zustand — 5단계 폼 상태)
+- [x] BuybackSheet 바텀시트 (5단계 스텝 폼 + 완료 화면)
 - [ ] Supabase에 마이그레이션 SQL 실행 (00001~00003)
-- [ ] 앱 화면 UI 개발 시작
+- [ ] Pretendard 폰트 적용
 
 ---
 
 ## 🚀 다음 세션에서 할 일
 
-### SESSION 3: Supabase DB 적용 + 시세 화면 UI
-1. Supabase SQL Editor에서 마이그레이션 실행 (00001 → 00002 → 00003 순서)
-2. 시세 리스트 화면 (PriceScreen — 브랜드 필터, 검색, SparkLine)
-3. 시세 상세 화면 (price/[id].tsx — 차트, 가격 히스토리)
+### SESSION 5: 시계거래 마켓플레이스
+1. 시계거래 리스트 화면 (시계 + 시계용품 탭)
+2. 시계거래 상세 화면
+3. 매물 등록 화면
 4. Pretendard 폰트 적용
 
-### SESSION 4: 크롤러 (Day 5~6)
+### SESSION 6: 크롤러 + 커뮤니티
 1. Python 크롤러 3개 개발 (하이시간, Chrono24, 바이버)
 2. 크롤러 → Supabase DB 연동
-3. 스케줄러 설정
+3. 커뮤니티 화면
 
 ---
 

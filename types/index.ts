@@ -277,3 +277,54 @@ export interface CollectionWithWatch extends Collection {
   watch: Watch;
   currentPrice: number | null;
 }
+
+// --- 홈 화면용 더미 데이터 타입 ---
+
+/** 홈 화면 커뮤니티 최신글 */
+export interface MockCommunityPost {
+  id: number;
+  title: string;
+  author: string;
+  comments: number;
+  likes: number;
+  time: string;
+  category: PostCategory;
+  pinned?: boolean;
+}
+
+/** 홈 화면 시계거래 매물 */
+export interface MockTradeItem {
+  id: number;
+  brand: string;
+  model: string;
+  ref: string;
+  price: number;
+  condition: string;
+  year: string;
+  loc: string;
+  kit: string;
+  badge: 'green' | 'yellow' | 'red';
+  badgeText: string;
+  type: TradeType;
+  author: string;
+  time: string;
+}
+
+/** 시계용품 매물 */
+export interface MockAccessoryItem {
+  id: number;
+  title: string;
+  price: number;
+  category: string;
+  author: string;
+  time: string;
+  condition: string;
+}
+
+/** 시계 뉴스 */
+export interface MockNews {
+  id: number;
+  title: string;
+  source: string;
+  time: string;
+}

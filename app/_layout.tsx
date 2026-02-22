@@ -38,6 +38,7 @@ export default function RootLayout() {
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="price/[id]" options={{ headerShown: false }} />
         <Stack.Screen name="+not-found" />
       </Stack>
     </>
