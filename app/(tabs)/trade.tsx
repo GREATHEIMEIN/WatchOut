@@ -249,8 +249,7 @@ const styles = StyleSheet.create({
   // 검색
   searchSection: {
     paddingHorizontal: SPACING.lg,
-    paddingTop: SPACING.md,
-    paddingBottom: SPACING.sm,
+    paddingVertical: SPACING.md,
   },
   searchBar: {
     flexDirection: 'row',
@@ -270,7 +269,7 @@ const styles = StyleSheet.create({
   // 필터
   filterRow: {
     paddingHorizontal: SPACING.lg,
-    paddingBottom: SPACING.sm,
+    paddingBottom: SPACING.xs,
     gap: 6,
     alignItems: 'center',
   },
@@ -296,7 +295,7 @@ const styles = StyleSheet.create({
   // 매물 수
   countRow: {
     paddingHorizontal: SPACING.lg,
-    paddingTop: SPACING.sm,
+    paddingTop: SPACING.md,
     paddingBottom: SPACING.sm,
   },
   countText: {
