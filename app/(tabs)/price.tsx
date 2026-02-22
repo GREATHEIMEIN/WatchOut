@@ -117,7 +117,8 @@ const styles = StyleSheet.create({
   },
   searchSection: {
     paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
+    paddingTop: SPACING.sm,
+    paddingBottom: SPACING.sm,
   },
   searchBar: {
     flexDirection: 'row',
@@ -136,7 +137,7 @@ const styles = StyleSheet.create({
   },
   brandFilter: {
     paddingHorizontal: SPACING.lg,
-    paddingBottom: SPACING.xs,
+    paddingBottom: SPACING.sm,
     gap: 6,
     alignItems: 'center',
   },
@@ -161,7 +162,7 @@ const styles = StyleSheet.create({
   },
   countRow: {
     paddingHorizontal: SPACING.lg,
-    paddingTop: SPACING.md,
+    paddingTop: SPACING.sm,
     paddingBottom: SPACING.sm,
   },
   countText: {
