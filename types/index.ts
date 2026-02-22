@@ -292,7 +292,7 @@ export interface MockCommunityPost {
   pinned?: boolean;
 }
 
-/** 홈 화면 시계거래 매물 */
+/** 시계거래 매물 */
 export interface MockTradeItem {
   id: number;
   brand: string;
@@ -308,6 +308,12 @@ export interface MockTradeItem {
   type: TradeType;
   author: string;
   time: string;
+  description?: string;
+  method?: string;
+  authorLevel?: number;
+  authorRating?: number;
+  views?: number;
+  status?: 'active' | 'reserved' | 'sold';
 }
 
 /** 시계용품 매물 */
@@ -319,6 +325,12 @@ export interface MockAccessoryItem {
   author: string;
   time: string;
   condition: string;
+  description?: string;
+  method?: string;
+  authorLevel?: number;
+  authorRating?: number;
+  views?: number;
+  status?: 'active' | 'reserved' | 'sold';
 }
 
 /** 시계 뉴스 */

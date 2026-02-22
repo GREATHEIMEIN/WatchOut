@@ -5,6 +5,47 @@
 
 ---
 
+## 2026-02-22 — SESSION 5: 시계거래 마켓플레이스
+
+### 완료
+- [x] MockTradeItem/MockAccessoryItem 타입 확장 (description, method, authorLevel 등 optional 필드)
+- [x] Mock 데이터 확장 (시계 3→7개, 용품 4→7개, 기존 항목에 description/method 추가)
+- [x] useTradeStore 생성 (store/useTradeStore.ts — 필터 + 폼 상태)
+- [x] TradeCard 컴포넌트 (components/trade/TradeCard.tsx — 2컬럼용 시계 카드)
+- [x] AccessoryCard 컴포넌트 (components/trade/AccessoryCard.tsx — 2컬럼용 용품 카드)
+- [x] 시계거래 리스트 화면 (app/(tabs)/trade.tsx — 탭+검색+필터+2컬럼 FlatList+FAB)
+- [x] 매물 상세 화면 (app/trade/[id].tsx — 이미지 갤러리+판매자+가격+정보 그리드+하단 CTA)
+- [x] 매물 등록 화면 (app/trade/create.tsx — 시계/용품별 폼+브랜드 그리드+구성품+사진+등록)
+- [x] app/_layout.tsx에 trade/[id], trade/create 라우트 추가
+- [x] TypeScript 컴파일 검증 통과
+
+### 생성된 파일
+- `store/useTradeStore.ts` — 시계거래 Zustand 스토어 (필터+폼)
+- `components/trade/TradeCard.tsx` — 시계 매물 카드 (2컬럼용)
+- `components/trade/AccessoryCard.tsx` — 시계용품 카드 (2컬럼용)
+- `app/trade/[id].tsx` — 매물 상세 화면
+- `app/trade/create.tsx` — 매물 등록 폼 화면
+
+### 수정된 파일
+- `types/index.ts` — MockTradeItem/MockAccessoryItem optional 필드 추가
+- `lib/mockData.ts` — 시계+4, 용품+3, 기존 항목 description 추가
+- `app/(tabs)/trade.tsx` — 빈 화면 → 완전한 마켓플레이스 리스트
+- `app/_layout.tsx` — trade/[id], trade/create Stack.Screen 추가
+
+### UI 구조
+- **시계거래 리스트**: Header → 시계/용품 탭 → 검색바 → 브랜드/카테고리 필터 → 매물 수 → 2컬럼 FlatList → FAB
+- **매물 상세**: Header(뒤로가기) → 이미지 갤러리(280px) → 판매자 정보 → 가격+시세배지 → 정보 그리드(2열×3행) → 설명 → 하단 CTA(찜+메시지)
+- **매물 등록**: Header(뒤로가기) → 시계/용품 탭 → 시계폼(거래유형+브랜드+모델+레퍼런스+연식/컨디션+구성품+가격+거래방법/지역+사진+설명) / 용품폼(카테고리+제목+가격/컨디션+사진+설명) → 등록 버튼
+
+### 메모
+- TradeCard와 AccessoryCard는 메타데이터 구조가 달라 별도 컴포넌트로 분리
+- 시계 카드에 판매/구매 배지(파랑/주황) + 시세 배지(green/yellow/red) 표시
+- 찜/메시지 기능은 Alert("준비 중")으로 처리
+- 사진 첨부는 UI placeholder만 (expo-image-picker 연동 추후)
+- 매물 등록 폼의 formData는 useTradeStore에 서브객체로 포함
+
+---
+
 ## 2026-02-22 — SESSION 4: 홈 화면 + 즉시매입 페이지
 
 ### 완료

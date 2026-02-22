@@ -39,6 +39,8 @@ export default function RootLayout() {
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="price/[id]" options={{ headerShown: false }} />
+        <Stack.Screen name="trade/[id]" options={{ headerShown: false }} />
+        <Stack.Screen name="trade/create" options={{ headerShown: false }} />
         <Stack.Screen name="+not-found" />
       </Stack>
     </>

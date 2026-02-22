@@ -101,17 +101,24 @@ export const MOCK_COMMUNITY_POSTS: MockCommunityPost[] = [
 
 // 시계거래 최신 매물 (v5 TRADE_ITEMS 기반)
 export const MOCK_TRADE_ITEMS: MockTradeItem[] = [
-  { id: 1, brand: 'Rolex', model: '서브마리너 데이트', ref: '126610LN', price: 12800000, condition: 'A급', year: '2023', loc: '서울 강남', kit: '풀박스', badge: 'green', badgeText: '시세 이하', type: 'sell', author: 'watchman', time: '1시간 전' },
-  { id: 2, brand: 'Omega', model: '스피드마스터', ref: '310.30.42', price: 5900000, condition: 'S급', year: '2024', loc: '서울 종로', kit: '풀박스+영수증', badge: 'yellow', badgeText: '시세 수준', type: 'sell', author: 'omega_fan', time: '3시간 전' },
-  { id: 3, brand: 'Rolex', model: '데이토나', ref: '116500LN', price: 34000000, condition: 'A급', year: '2022', loc: '부산', kit: '보증서만', badge: 'red', badgeText: '시세 이상', type: 'buy', author: 'collector_kr', time: '5시간 전' },
+  { id: 1, brand: 'Rolex', model: '서브마리너 데이트', ref: '126610LN', price: 12800000, condition: 'A급', year: '2023', loc: '서울 강남', kit: '풀박스', badge: 'green', badgeText: '시세 이하', type: 'sell', author: 'watchman', time: '1시간 전', description: '2023년 정식 수입 풀박스 서브마리너입니다. 일상 착용감 거의 없으며, 보증서 2028년까지 유효합니다. 직거래 선호하며 강남역 인근에서 만남 가능합니다.', method: '직거래', authorLevel: 5, authorRating: 4.8, views: 142, status: 'active' },
+  { id: 2, brand: 'Omega', model: '스피드마스터', ref: '310.30.42', price: 5900000, condition: 'S급', year: '2024', loc: '서울 종로', kit: '풀박스+영수증', badge: 'yellow', badgeText: '시세 수준', type: 'sell', author: 'omega_fan', time: '3시간 전', description: '2024년 백화점 구매 미착용 새상품입니다. 영수증, 보증서, 풀박스 모두 포함됩니다.', method: '둘 다', authorLevel: 3, authorRating: 4.5, views: 89, status: 'active' },
+  { id: 3, brand: 'Rolex', model: '데이토나', ref: '116500LN', price: 34000000, condition: 'A급', year: '2022', loc: '부산', kit: '보증서만', badge: 'red', badgeText: '시세 이상', type: 'buy', author: 'collector_kr', time: '5시간 전', description: '116500LN 화이트 다이얼 구매 원합니다. 보증서 유무 상관없이 상태 좋은 매물 찾고 있습니다. 부산 직거래 또는 택배 모두 가능합니다.', method: '둘 다', authorLevel: 7, authorRating: 4.9, views: 231, status: 'active' },
+  { id: 4, brand: 'AP', model: '로열오크', ref: '15500ST', price: 37500000, condition: 'S급', year: '2024', loc: '서울 청담', kit: '풀박스+영수증', badge: 'green', badgeText: '시세 이하', type: 'sell', author: 'ap_master', time: '2시간 전', description: '2024년 정식 수입 로열오크 블루 다이얼입니다. 매장 구매 후 미착용 보관 중이며 풀박스+영수증 포함입니다.', method: '직거래', authorLevel: 6, authorRating: 4.7, views: 178, status: 'active' },
+  { id: 5, brand: 'Patek Philippe', model: '노틸러스', ref: '5711/1A', price: 85000000, condition: 'A급', year: '2021', loc: '서울 강남', kit: '풀박스', badge: 'yellow', badgeText: '시세 수준', type: 'sell', author: 'patek_kr', time: '4시간 전', description: '5711/1A 블루 다이얼 마지막 생산분입니다. 착용감 미세하며 풀박스 구성입니다. 진지한 분만 연락 부탁드립니다.', method: '직거래', authorLevel: 8, authorRating: 5.0, views: 412, status: 'active' },
+  { id: 6, brand: 'Cartier', model: '산토스 미디엄', ref: 'WSSA0029', price: 7200000, condition: 'A급', year: '2023', loc: '인천', kit: '보증서만', badge: 'green', badgeText: '시세 이하', type: 'sell', author: 'santos_fan', time: '6시간 전', description: '까르띠에 산토스 미디엄 블루 다이얼. 스틸 브레이슬릿+가죽 스트랩 교체 시스템 포함. 보증서 보유.', method: '택배', authorLevel: 2, authorRating: 4.3, views: 67, status: 'active' },
+  { id: 7, brand: 'Omega', model: '씨마스터 300', ref: '210.30.42', price: 6500000, condition: 'B급', year: '2022', loc: '대전', kit: '없음', badge: 'green', badgeText: '시세 이하', type: 'buy', author: 'diver_kr', time: '8시간 전', description: '씨마스터 300 블랙 다이얼 구매 원합니다. B급 이상이면 되며 구성품 없어도 괜찮습니다. 대전 직거래 우대.', method: '직거래', authorLevel: 4, authorRating: 4.6, views: 53, status: 'active' },
 ];
 
 // 시계용품 매물 (v5 ACCESSORY_ITEMS 기반)
 export const MOCK_ACCESSORY_ITEMS: MockAccessoryItem[] = [
-  { id: 10, title: '롤렉스 오이스터 순정 스트랩 (새상품)', price: 450000, category: '스트랩/브레이슬릿', author: 'parts_kr', time: '2시간 전', condition: 'S급' },
-  { id: 11, title: '울프 와인더 4구 (British Racing)', price: 680000, category: '와인더/보관함', author: 'luxbox', time: '4시간 전', condition: 'A급' },
-  { id: 12, title: '베르종 시계 공구 세트 16종', price: 120000, category: '공구/도구', author: 'toolmaster', time: '6시간 전', condition: 'S급' },
-  { id: 13, title: '시계 보호 필름 (41mm용 5매)', price: 15000, category: '보호필름/케이스', author: 'film_shop', time: '1일 전', condition: 'S급' },
+  { id: 10, title: '롤렉스 오이스터 순정 스트랩 (새상품)', price: 450000, category: '스트랩/브레이슬릿', author: 'parts_kr', time: '2시간 전', condition: 'S급', description: '롤렉스 오이스터 퍼페추얼 36mm용 순정 스틸 브레이슬릿입니다. 미사용 새상품이며 박스 포함입니다.', method: '택배', authorLevel: 4, authorRating: 4.7, views: 45, status: 'active' },
+  { id: 11, title: '울프 와인더 4구 (British Racing)', price: 680000, category: '와인더/보관함', author: 'luxbox', time: '4시간 전', condition: 'A급', description: 'WOLF 브리티시 레이싱 그린 4구 와인더. 구매 후 6개월 사용했으며 상태 양호합니다. 정품 박스 포함.', method: '둘 다', authorLevel: 3, authorRating: 4.5, views: 72, status: 'active' },
+  { id: 12, title: '베르종 시계 공구 세트 16종', price: 120000, category: '공구/도구', author: 'toolmaster', time: '6시간 전', condition: 'S급', description: '베르종 정품 시계 공구 세트 16종입니다. 스트랩 교체, 핀 제거 등에 필요한 도구가 모두 포함되어 있습니다.', method: '택배', authorLevel: 5, authorRating: 4.8, views: 34, status: 'active' },
+  { id: 13, title: '시계 보호 필름 (41mm용 5매)', price: 15000, category: '보호필름/케이스', author: 'film_shop', time: '1일 전', condition: 'S급', description: '41mm 시계 전면 보호 필름 5매 세트. TPU 소재로 기포 없이 부착 가능합니다.', method: '택배', authorLevel: 2, authorRating: 4.2, views: 128, status: 'active' },
+  { id: 14, title: '오메가 나토 스트랩 (순정 그레이)', price: 180000, category: '스트랩/브레이슬릿', author: 'omega_parts', time: '3시간 전', condition: 'S급', description: '오메가 순정 나토 스트랩 그레이 컬러. 20mm 폭이며 미사용 새상품입니다.', method: '택배', authorLevel: 3, authorRating: 4.4, views: 28, status: 'active' },
+  { id: 15, title: '3구 시계 보관 케이스 (가죽)', price: 95000, category: '보호필름/케이스', author: 'case_shop', time: '5시간 전', condition: 'S급', description: '이탈리아 가죽 3구 시계 보관 케이스. 여행용으로 적합하며 지퍼 잠금 방식입니다.', method: '택배', authorLevel: 4, authorRating: 4.6, views: 56, status: 'active' },
+  { id: 16, title: '시계 세척 키트 (초음파)', price: 250000, category: '공구/도구', author: 'clean_tools', time: '2일 전', condition: 'A급', description: '초음파 세척기 + 전용 세척액 세트. 브레이슬릿 세척에 최적화되어 있으며, 1회 사용했습니다.', method: '둘 다', authorLevel: 3, authorRating: 4.3, views: 41, status: 'active' },
 ];
 
 // 시계 뉴스 (v5 NEWS 기반)
