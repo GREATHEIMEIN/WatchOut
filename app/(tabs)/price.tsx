@@ -47,65 +47,69 @@ export default function PriceScreen() {
     <View style={styles.container}>
       <Header title="시세" />
 
-      {/* 검색바 */}
-      <View style={styles.searchSection}>
-        <View style={styles.searchBar}>
-          <Ionicons name="search" size={18} color={COLORS.sub} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="브랜드, 모델명, 레퍼런스 검색"
-            placeholderTextColor={COLORS.sub}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            returnKeyType="search"
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={18} color={COLORS.sub} />
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-
-      {/* 브랜드 필터 */}
       <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.brandFilter}
-      >
-        {BRANDS.map((brand) => {
-          const isActive = selectedBrand === brand;
-          return (
-            <TouchableOpacity
-              key={brand}
-              style={[styles.brandChip, isActive && styles.brandChipActive]}
-              onPress={() => setSelectedBrand(brand)}
-            >
-              <Text style={[styles.brandChipText, isActive && styles.brandChipTextActive]}>
-                {brand}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
-
-      {/* 모델 수 */}
-      <View style={styles.countRow}>
-        <Text style={styles.countText}>{filtered.length}개 모델</Text>
-      </View>
-
-      {/* 시계 목록 */}
-      <FlatList
-        style={styles.list}
-        data={filtered}
-        keyExtractor={(item) => String(item.id)}
-        renderItem={({ item }) => (
-          <PriceCard watch={item} onPress={() => handlePressWatch(item)} />
-        )}
-        contentContainerStyle={styles.listContent}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
-      />
+      >
+        {/* 검색바 */}
+        <View style={styles.searchSection}>
+          <View style={styles.searchBar}>
+            <Ionicons name="search" size={18} color={COLORS.sub} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="브랜드, 모델명, 레퍼런스 검색"
+              placeholderTextColor={COLORS.sub}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              returnKeyType="search"
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')}>
+                <Ionicons name="close-circle" size={18} color={COLORS.sub} />
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+
+        {/* 브랜드 필터 */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={{ marginBottom: 12 }}
+          contentContainerStyle={styles.brandFilter}
+        >
+          {BRANDS.map((brand) => {
+            const isActive = selectedBrand === brand;
+            return (
+              <TouchableOpacity
+                key={brand}
+                style={[styles.brandChip, isActive && styles.brandChipActive]}
+                onPress={() => setSelectedBrand(brand)}
+              >
+                <Text style={[styles.brandChipText, isActive && styles.brandChipTextActive]}>
+                  {brand}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+
+        {/* 모델 수 */}
+        <View style={styles.countRow}>
+          <Text style={styles.countText}>{filtered.length}개 모델</Text>
+        </View>
+
+        {/* 시계 목록 */}
+        <View style={styles.listContainer}>
+          {filtered.map((item, index) => (
+            <View key={String(item.id)}>
+              <PriceCard watch={item} onPress={() => handlePressWatch(item)} />
+              {index < filtered.length - 1 && <View style={styles.separator} />}
+            </View>
+          ))}
+        </View>
+      </ScrollView>
     </View>
   );
 }
@@ -114,6 +118,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.bg,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 100,
   },
   searchSection: {
     paddingHorizontal: SPACING.lg,
@@ -137,9 +147,7 @@ const styles = StyleSheet.create({
   },
   brandFilter: {
     paddingHorizontal: SPACING.lg,
-    paddingBottom: SPACING.sm,
     gap: 6,
-    alignItems: 'center',
   },
   brandChip: {
     height: 32,
@@ -162,7 +170,6 @@ const styles = StyleSheet.create({
   },
   countRow: {
     paddingHorizontal: SPACING.lg,
-    paddingTop: SPACING.sm,
     paddingBottom: SPACING.sm,
   },
   countText: {
@@ -170,13 +177,8 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: COLORS.sub,
   },
-  list: {
-    flex: 1,
-  },
-  listContent: {
+  listContainer: {
     paddingHorizontal: SPACING.lg,
-    paddingBottom: 100,
-    flexGrow: 0,
   },
   separator: {
     height: SPACING.sm,

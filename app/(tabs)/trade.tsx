@@ -104,104 +104,112 @@ export default function TradeScreen() {
         })}
       </View>
 
-      {/* 검색바 */}
-      <View style={styles.searchSection}>
-        <View style={styles.searchBar}>
-          <Ionicons name="search" size={18} color={COLORS.sub} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder={isWatch ? '브랜드, 모델명, 레퍼런스 검색' : '용품명 검색'}
-            placeholderTextColor={COLORS.sub}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            returnKeyType="search"
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={18} color={COLORS.sub} />
-            </TouchableOpacity>
-          )}
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* 검색바 */}
+        <View style={styles.searchSection}>
+          <View style={styles.searchBar}>
+            <Ionicons name="search" size={18} color={COLORS.sub} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder={isWatch ? '브랜드, 모델명, 레퍼런스 검색' : '용품명 검색'}
+              placeholderTextColor={COLORS.sub}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              returnKeyType="search"
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')}>
+                <Ionicons name="close-circle" size={18} color={COLORS.sub} />
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
-      </View>
 
-      {/* 필터 — 시계 탭: 브랜드 / 용품 탭: 카테고리 */}
-      {isWatch ? (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filterRow}
-        >
-          {TRADE_BRANDS.map((brand) => {
-            const active = selectedBrand === brand;
-            return (
-              <TouchableOpacity
-                key={brand}
-                style={[styles.filterChip, active && styles.filterChipActive]}
-                onPress={() => setSelectedBrand(brand)}
-              >
-                <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>
-                  {brand}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      ) : (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filterRow}
-        >
-          {ACCESSORY_CATEGORIES.map((cat) => {
-            const active = selectedCategory === cat;
-            return (
-              <TouchableOpacity
-                key={cat}
-                style={[styles.filterChip, active && styles.filterChipActive]}
-                onPress={() => setSelectedCategory(cat)}
-              >
-                <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>
-                  {cat}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      )}
+        {/* 필터 — 시계 탭: 브랜드 / 용품 탭: 카테고리 */}
+        {isWatch ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={{ marginBottom: 12 }}
+            contentContainerStyle={styles.filterRow}
+          >
+            {TRADE_BRANDS.map((brand) => {
+              const active = selectedBrand === brand;
+              return (
+                <TouchableOpacity
+                  key={brand}
+                  style={[styles.filterChip, active && styles.filterChipActive]}
+                  onPress={() => setSelectedBrand(brand)}
+                >
+                  <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>
+                    {brand}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        ) : (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={{ marginBottom: 12 }}
+            contentContainerStyle={styles.filterRow}
+          >
+            {ACCESSORY_CATEGORIES.map((cat) => {
+              const active = selectedCategory === cat;
+              return (
+                <TouchableOpacity
+                  key={cat}
+                  style={[styles.filterChip, active && styles.filterChipActive]}
+                  onPress={() => setSelectedCategory(cat)}
+                >
+                  <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>
+                    {cat}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        )}
 
-      {/* 매물 수 */}
-      <View style={styles.countRow}>
-        <Text style={styles.countText}>
-          {isWatch ? filteredTrades.length : filteredAccessories.length}개 매물
-        </Text>
-      </View>
+        {/* 매물 수 */}
+        <View style={styles.countRow}>
+          <Text style={styles.countText}>
+            {isWatch ? filteredTrades.length : filteredAccessories.length}개 매물
+          </Text>
+        </View>
 
-      {/* 2컬럼 그리드 */}
-      {isWatch ? (
-        <FlatList
-          style={{ flex: 1 }}
-          data={filteredTrades}
-          numColumns={2}
-          keyExtractor={(item) => String(item.id)}
-          renderItem={renderTradeItem}
-          columnWrapperStyle={styles.columnWrapper}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-          ListEmptyComponent={renderEmpty}
-        />
-      ) : (
-        <FlatList
-          style={{ flex: 1 }}
-          data={filteredAccessories}
-          numColumns={2}
-          keyExtractor={(item) => String(item.id)}
-          renderItem={renderAccessoryItem}
-          columnWrapperStyle={styles.columnWrapper}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-          ListEmptyComponent={renderEmpty}
-        />
-      )}
+        {/* 2컬럼 그리드 */}
+        {isWatch ? (
+          filteredTrades.length > 0 ? (
+            <View style={styles.gridContainer}>
+              {filteredTrades.map((item) => (
+                <View key={String(item.id)} style={styles.gridItem}>
+                  <TradeCard item={item} onPress={() => handlePressWatch(item)} />
+                </View>
+              ))}
+            </View>
+          ) : (
+            renderEmpty()
+          )
+        ) : (
+          filteredAccessories.length > 0 ? (
+            <View style={styles.gridContainer}>
+              {filteredAccessories.map((item) => (
+                <View key={String(item.id)} style={styles.gridItem}>
+                  <AccessoryCard item={item} onPress={() => handlePressAccessory(item)} />
+                </View>
+              ))}
+            </View>
+          ) : (
+            renderEmpty()
+          )
+        )}
+      </ScrollView>
 
       {/* FAB 매물 등록 */}
       <TouchableOpacity
@@ -246,6 +254,13 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: COLORS.text,
   },
+  // 스크롤
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 120,
+  },
   // 검색
   searchSection: {
     paddingHorizontal: SPACING.lg,
@@ -270,9 +285,7 @@ const styles = StyleSheet.create({
   // 필터
   filterRow: {
     paddingHorizontal: SPACING.lg,
-    paddingBottom: SPACING.sm,
     gap: 6,
-    alignItems: 'center',
   },
   filterChip: {
     height: 32,
@@ -296,7 +309,6 @@ const styles = StyleSheet.create({
   // 매물 수
   countRow: {
     paddingHorizontal: SPACING.lg,
-    paddingTop: SPACING.sm,
     paddingBottom: SPACING.sm,
   },
   countText: {
@@ -305,14 +317,14 @@ const styles = StyleSheet.create({
     color: COLORS.sub,
   },
   // 그리드
-  columnWrapper: {
+  gridContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: SPACING.lg,
     gap: SPACING.sm,
   },
-  listContent: {
-    paddingHorizontal: SPACING.lg,
-    paddingBottom: 120,
-    gap: SPACING.sm,
-    flexGrow: 0,
+  gridItem: {
+    width: '48%',
   },
   // 빈 상태
   emptyContainer: {
