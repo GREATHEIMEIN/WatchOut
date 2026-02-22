@@ -100,6 +100,20 @@ export default function TradeCreateScreen() {
         })}
       </View>
 
+      {/* 기타 브랜드 직접 입력 */}
+      {formData.brand === '기타' && (
+        <View style={{ marginTop: SPACING.md }}>
+          <Text style={styles.inputLabel}>브랜드명 *</Text>
+          <TextInput
+            style={styles.inputField}
+            placeholder="브랜드명을 입력해주세요"
+            placeholderTextColor={COLORS.sub}
+            value={formData.brand !== '기타' && !BRAND_OPTIONS.includes(formData.brand as any) ? formData.brand : ''}
+            onChangeText={(v) => setFormField('brand', v.trim() || '기타')}
+          />
+        </View>
+      )}
+
       {/* 모델명 */}
       <Text style={styles.inputLabel}>모델명 *</Text>
       <TextInput
