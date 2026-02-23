@@ -1,7 +1,7 @@
 // 탭 네비게이션 레이아웃 — 5개 탭 (홈, 시세, 즉시매입, 시계거래, MY)
 
 import { Tabs } from 'expo-router';
-import { Platform, StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '@/lib/constants';
 
@@ -46,12 +46,13 @@ export default function TabLayout() {
         name="buyback"
         options={{
           title: '즉시매입',
-          tabBarIcon: () => (
-            <View style={styles.buybackButton}>
-              <Ionicons name="cash-outline" size={24} color="#FFFFFF" />
-            </View>
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? 'cash' : 'cash-outline'}
+              size={22}
+              color={color}
+            />
           ),
-          tabBarLabelStyle: styles.buybackLabel,
         }}
       />
       <Tabs.Screen
@@ -108,23 +109,5 @@ const styles = StyleSheet.create({
   tabLabel: {
     fontSize: 10,
     fontWeight: '500',
-  },
-  buybackButton: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    backgroundColor: COLORS.text,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: -20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.18,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  buybackLabel: {
-    fontSize: 10,
-    fontWeight: '600',
   },
 });
