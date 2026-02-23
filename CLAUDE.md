@@ -29,6 +29,15 @@ WATCHOUT은 럭셔리 시계 시세 조회 + 즉시매입 + P2P 거래 + 커뮤�
 - 주석: 한국어로 작성
 - 커밋: conventional commits (feat:, fix:, refactor:, chore:)
 
+## 레이아웃 규칙 (중요!)
+- **FlatList 사용 금지**: ScrollView + map() 패턴만 사용 (데이터 적고, flex 레이아웃 문제 방지)
+- **contentContainerStyle에 flexGrow: 1 금지**: 빈 공간 생성 방지
+- **리스트 구분선**: divider (height: 1, backgroundColor: COLORS.border) 사용
+- **간격 통일**: SPACING 상수 활용 (xs: 4, sm: 8, md: 12, lg: 20, xl: 24, xxl: 32)
+- **placeholder 이미지**: Ionicons 사용 (예: watch-outline), 회색 배경(COLORS.tag)
+- **카드 높이**: 동적 컨텐츠를 제외하고 고정 높이 사용 (예: 브랜드 칩 height: 32)
+- **검색바↔필터↔리스트**: paddingBottom 최소화 (4-8px)로 compact 레이아웃 유지
+
 ## 디자인 시스템
 ```
 메인 배경: #FAFAFA     카드 배경: #FFFFFF
