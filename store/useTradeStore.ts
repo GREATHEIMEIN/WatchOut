@@ -1,6 +1,9 @@
 // 시계거래 상태 관리
 
 import { create } from 'zustand';
+import { supabase } from '@/lib/supabase';
+import { formatRelativeTime } from '@/lib/format';
+import { useAuthStore } from './useAuthStore';
 import type { MockTradeItem, MockAccessoryItem, ItemType, TradeType, Condition } from '@/types';
 
 type SortOption = 'latest' | 'price_low' | 'price_high';
@@ -59,8 +62,9 @@ interface TradeState {
   // 시계용품 필터
   selectedCategory: string;
 
-  // 로딩
+  // 로딩 & 에러
   loading: boolean;
+  error: string | null;
 
   // 매물 등록 폼
   formData: TradeFormData;
@@ -75,6 +79,12 @@ interface TradeState {
   setSortOption: (option: SortOption) => void;
   setSelectedCategory: (category: string) => void;
   setLoading: (loading: boolean) => void;
+  setError: (error: string | null) => void;
+
+  // Supabase 액션
+  fetchTradePosts: (itemType: ItemType) => Promise<void>;
+  createTradePost: () => Promise<{ success: boolean; error?: string }>;
+  uploadImages: (uris: string[]) => Promise<string[]>;
 
   // 폼 액션
   setFormField: <K extends keyof TradeFormData>(key: K, value: TradeFormData[K]) => void;
@@ -97,6 +107,7 @@ export const useTradeStore = create<TradeState>((set, get) => ({
   sortOption: 'latest',
   selectedCategory: '전체',
   loading: false,
+  error: null,
   formData: { ...INITIAL_FORM },
 
   setTradeItems: (tradeItems) => set({ tradeItems }),
@@ -108,6 +119,7 @@ export const useTradeStore = create<TradeState>((set, get) => ({
   setSortOption: (sortOption) => set({ sortOption }),
   setSelectedCategory: (selectedCategory) => set({ selectedCategory }),
   setLoading: (loading) => set({ loading }),
+  setError: (error) => set({ error }),
 
   // 폼 액션
   setFormField: (key, value) =>
@@ -190,5 +202,144 @@ export const useTradeStore = create<TradeState>((set, get) => ({
     }
 
     return filtered;
+  },
+
+  /**
+   * Supabase에서 매물 조회
+   * trade_posts + users LEFT JOIN
+   */
+  fetchTradePosts: async (itemType: ItemType) => {
+    set({ loading: true, error: null });
+
+    try {
+      const { data, error } = await supabase
+        .from('trade_posts')
+        .select(`*, users:user_id(nickname, level, avatar_url)`)
+        .eq('item_type', itemType)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const items = (data || []).map((post: any) => ({
+        id: post.id,
+        brand: post.brand || '',
+        model: post.model || '',
+        ref: post.reference_number || '',
+        price: post.price,
+        condition: post.condition || 'A',
+        year: post.year || '',
+        loc: post.location || '',
+        kit: post.kit || '',
+        badge: 'green' as const,
+        badgeText: '시세',
+        type: post.type,
+        author: post.users?.nickname || 'Unknown',
+        time: formatRelativeTime(post.created_at),
+        description: post.description,
+        method: post.method || '직거래',
+        authorLevel: post.users?.level || 1,
+        authorRating: 4.8,
+        views: post.views,
+        status: post.status,
+        title: post.title || '',
+        category: '워치와인더',
+      }));
+
+      if (itemType === 'watch') {
+        set({ tradeItems: items, loading: false });
+      } else {
+        set({ accessoryItems: items, loading: false });
+      }
+    } catch (error) {
+      console.error('fetchTradePosts error:', error);
+      set({ error: '매물을 불러올 수 없습니다', loading: false });
+    }
+  },
+
+  /**
+   * Storage에 이미지 업로드
+   */
+  uploadImages: async (uris: string[]) => {
+    const { user } = useAuthStore.getState();
+    if (!user) return [];
+
+    const uploadedUrls: string[] = [];
+
+    for (const uri of uris) {
+      try {
+        const fileName = `${user.id}/${Date.now()}_${Math.random()}.jpg`;
+
+        // Note: Supabase storage.upload는 React Native에서 직접 지원하지 않음
+        // expo-image-picker로 선택한 이미지는 별도 처리 필요
+        // 현재는 placeholder로 구현
+        const { data, error } = await supabase.storage
+          .from('trade-images')
+          .upload(fileName, uri as any);
+
+        if (error) throw error;
+
+        const {
+          data: { publicUrl },
+        } = supabase.storage.from('trade-images').getPublicUrl(fileName);
+
+        uploadedUrls.push(publicUrl);
+      } catch (error) {
+        console.error('uploadImages error:', error);
+      }
+    }
+
+    return uploadedUrls;
+  },
+
+  /**
+   * 매물 등록 (CREATE)
+   */
+  createTradePost: async () => {
+    const { formData } = get();
+    const { user } = useAuthStore.getState();
+
+    if (!user) {
+      return { success: false, error: '로그인이 필요합니다' };
+    }
+
+    set({ loading: true, error: null });
+
+    try {
+      // 1. 이미지 업로드 (현재는 skip)
+      const imageUrls: string[] = [];
+
+      // 2. DB INSERT
+      const { error } = await supabase.from('trade_posts').insert({
+        user_id: user.id,
+        type: formData.type,
+        item_type: formData.itemType,
+        brand: formData.itemType === 'watch' ? formData.brand : null,
+        model: formData.itemType === 'watch' ? formData.model : null,
+        reference_number: formData.referenceNumber || null,
+        title: formData.itemType === 'accessory' ? formData.title : null,
+        price: parseInt(formData.price),
+        condition: formData.condition || null,
+        year: formData.year || null,
+        kit: formData.kit.join(', ') || null,
+        description: formData.description,
+        images: imageUrls.length > 0 ? imageUrls : null,
+        location: formData.location || null,
+        method: formData.method || '직거래',
+      });
+
+      if (error) throw error;
+
+      // 3. 폼 리셋 + 리스트 새로고침
+      get().resetForm();
+      await get().fetchTradePosts(formData.itemType);
+
+      set({ loading: false });
+      return { success: true };
+    } catch (error) {
+      console.error('createTradePost error:', error);
+      set({ error: '매물 등록에 실패했습니다', loading: false });
+      return { success: false, error: '매물 등록에 실패했습니다' };
+    }
   },
 }));

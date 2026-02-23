@@ -2,7 +2,8 @@
 
 import { useEffect } from 'react';
 import {
-  FlatList,
+  ActivityIndicator,
+  Alert,
   ScrollView,
   StyleSheet,
   Text,
@@ -16,8 +17,8 @@ import Header from '@/components/common/Header';
 import TradeCard from '@/components/trade/TradeCard';
 import AccessoryCard from '@/components/trade/AccessoryCard';
 import { COLORS, RADIUS, SPACING } from '@/lib/constants';
-import { MOCK_TRADE_ITEMS, MOCK_ACCESSORY_ITEMS } from '@/lib/mockData';
 import { useTradeStore } from '@/store/useTradeStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import type { ItemType, MockTradeItem, MockAccessoryItem } from '@/types';
 
 const TABS: { key: ItemType; label: string }[] = [
@@ -34,23 +35,23 @@ export default function TradeScreen() {
   const {
     activeTab,
     setActiveTab,
-    setTradeItems,
-    setAccessoryItems,
     searchQuery,
     setSearchQuery,
     selectedBrand,
     setSelectedBrand,
     selectedCategory,
     setSelectedCategory,
+    loading,
+    error,
+    fetchTradePosts,
     getFilteredTradeItems,
     getFilteredAccessoryItems,
   } = useTradeStore();
 
-  // Mock 데이터 로드
+  // Supabase에서 매물 데이터 로드
   useEffect(() => {
-    setTradeItems(MOCK_TRADE_ITEMS);
-    setAccessoryItems(MOCK_ACCESSORY_ITEMS);
-  }, [setTradeItems, setAccessoryItems]);
+    fetchTradePosts(activeTab);
+  }, [activeTab]);
 
   const filteredTrades = getFilteredTradeItems();
   const filteredAccessories = getFilteredAccessoryItems();
@@ -63,24 +64,6 @@ export default function TradeScreen() {
   const handlePressAccessory = (item: MockAccessoryItem) => {
     router.push(`/trade/${item.id}`);
   };
-
-  // 시계 목록 렌더러
-  const renderTradeItem = ({ item }: { item: MockTradeItem }) => (
-    <TradeCard item={item} onPress={() => handlePressWatch(item)} />
-  );
-
-  // 용품 목록 렌더러
-  const renderAccessoryItem = ({ item }: { item: MockAccessoryItem }) => (
-    <AccessoryCard item={item} onPress={() => handlePressAccessory(item)} />
-  );
-
-  // 빈 상태
-  const renderEmpty = () => (
-    <View style={styles.emptyContainer}>
-      <Ionicons name="search-outline" size={40} color={COLORS.sub} />
-      <Text style={styles.emptyText}>매물이 없습니다</Text>
-    </View>
-  );
 
   return (
     <View style={styles.container}>
@@ -134,7 +117,6 @@ export default function TradeScreen() {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            style={{ marginBottom: 12 }}
             contentContainerStyle={styles.filterRow}
           >
             {TRADE_BRANDS.map((brand) => {
@@ -156,7 +138,6 @@ export default function TradeScreen() {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            style={{ marginBottom: 12 }}
             contentContainerStyle={styles.filterRow}
           >
             {ACCESSORY_CATEGORIES.map((cat) => {
@@ -183,8 +164,30 @@ export default function TradeScreen() {
           </Text>
         </View>
 
+        {/* 로딩 중 */}
+        {loading && (
+          <View style={styles.centerContainer}>
+            <ActivityIndicator size="large" color={COLORS.accent} />
+            <Text style={styles.loadingText}>매물을 불러오는 중...</Text>
+          </View>
+        )}
+
+        {/* 에러 */}
+        {!loading && error && (
+          <View style={styles.errorContainer}>
+            <Ionicons name="alert-circle-outline" size={40} color={COLORS.red} />
+            <Text style={styles.errorText}>{error}</Text>
+            <TouchableOpacity
+              style={styles.retryButton}
+              onPress={() => fetchTradePosts(activeTab)}
+            >
+              <Text style={styles.retryButtonText}>다시 시도</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* 2컬럼 그리드 */}
-        {isWatch ? (
+        {!loading && !error && (isWatch ? (
           filteredTrades.length > 0 ? (
             <View style={styles.gridContainer}>
               {filteredTrades.map((item) => (
@@ -194,7 +197,10 @@ export default function TradeScreen() {
               ))}
             </View>
           ) : (
-            renderEmpty()
+            <View style={styles.emptyContainer}>
+              <Ionicons name="search-outline" size={40} color={COLORS.sub} />
+              <Text style={styles.emptyText}>매물이 없습니다</Text>
+            </View>
           )
         ) : (
           filteredAccessories.length > 0 ? (
@@ -206,15 +212,31 @@ export default function TradeScreen() {
               ))}
             </View>
           ) : (
-            renderEmpty()
+            <View style={styles.emptyContainer}>
+              <Ionicons name="search-outline" size={40} color={COLORS.sub} />
+              <Text style={styles.emptyText}>매물이 없습니다</Text>
+            </View>
           )
-        )}
+        ))}
       </ScrollView>
 
       {/* FAB 매물 등록 */}
       <TouchableOpacity
         style={styles.fab}
-        onPress={() => router.push('/trade/create')}
+        onPress={() => {
+          console.log('[Trade] 매물 등록 버튼 클릭됨!');
+          const { isLoggedIn } = useAuthStore.getState();
+          console.log('[Trade] 로그인 상태:', isLoggedIn);
+
+          if (!isLoggedIn) {
+            console.log('[Trade] 비로그인 → 로그인 페이지로 이동');
+            router.push('/auth/login');
+            return;
+          }
+
+          console.log('[Trade] 로그인 상태 → /trade/create로 이동');
+          router.push('/trade/create');
+        }}
         activeOpacity={0.8}
       >
         <Ionicons name="add" size={20} color="#FFFFFF" />
@@ -265,7 +287,7 @@ const styles = StyleSheet.create({
   searchSection: {
     paddingHorizontal: SPACING.lg,
     paddingTop: SPACING.sm,
-    paddingBottom: SPACING.sm,
+    paddingBottom: SPACING.xs,
   },
   searchBar: {
     flexDirection: 'row',
@@ -285,6 +307,7 @@ const styles = StyleSheet.create({
   // 필터
   filterRow: {
     paddingHorizontal: SPACING.lg,
+    paddingBottom: SPACING.xs,
     gap: 6,
   },
   filterChip: {
@@ -337,6 +360,44 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.sub,
   },
+  // 로딩/에러 상태
+  centerContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+    gap: SPACING.md,
+  },
+  loadingText: {
+    fontSize: 14,
+    color: COLORS.sub,
+    marginTop: SPACING.sm,
+  },
+  errorContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+    paddingHorizontal: SPACING.lg,
+    gap: SPACING.md,
+  },
+  errorText: {
+    fontSize: 14,
+    color: COLORS.sub,
+    textAlign: 'center',
+  },
+  retryButton: {
+    marginTop: SPACING.sm,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    backgroundColor: COLORS.accent,
+    borderRadius: RADIUS.button,
+  },
+  retryButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
   // FAB
   fab: {
     position: 'absolute',
@@ -354,6 +415,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 8,
     elevation: 8,
+    zIndex: 100,
   },
   fabText: {
     fontSize: 14,

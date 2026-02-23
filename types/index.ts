@@ -164,10 +164,22 @@ export interface Collection {
   createdAt: string;
 }
 
+// DB Row 타입 (snake_case)
+export interface CollectionRow {
+  id: number;
+  user_id: string;
+  watch_id: number;
+  purchase_price: number | null;
+  purchase_date: string | null;
+  note: string | null;
+  created_at: string;
+}
+
 export interface CollectionInsert {
-  watchId: number;
-  purchasePrice?: number | null;
-  purchaseDate?: string | null;
+  user_id: string;
+  watch_id: number;
+  purchase_price?: number | null;
+  purchase_date?: string | null;
   note?: string | null;
 }
 
@@ -258,6 +270,7 @@ export interface WatchWithPrice extends Watch {
 /** 매물 목록용: TradePost + 작성자 닉네임 */
 export interface TradePostWithAuthor extends TradePost {
   authorNickname: string;
+  authorLevel: number;
   authorAvatarUrl: string | null;
 }
 
@@ -272,10 +285,35 @@ export interface CommentWithAuthor extends Comment {
   authorAvatarUrl: string | null;
 }
 
-/** 컬렉션 목록용: Collection + Watch 정보 + 현재 시세 */
-export interface CollectionWithWatch extends Collection {
-  watch: Watch;
+/** 컬렉션 목록용: Collection + Watch 정보 + 현재 시세 + 수익률 */
+export interface CollectionWithWatch {
+  id: number;
+  userId: string;
+  watchId: number;
+  purchasePrice: number | null;
+  purchaseDate: string | null;
+  note: string | null;
+  createdAt: string;
+  // Watch 정보
+  brand: string;
+  model: string;
+  referenceNumber: string;
+  imageUrl: string | null;
+  // 시세 정보
   currentPrice: number | null;
+  changePercent: number | null;
+  // 계산된 수익률
+  returnRate: number | null; // ((currentPrice - purchasePrice) / purchasePrice) * 100
+  returnAmount: number | null; // currentPrice - purchasePrice
+}
+
+/** 포트폴리오 통계 */
+export interface PortfolioStats {
+  totalWatches: number;
+  totalPurchaseValue: number;
+  totalCurrentValue: number;
+  totalReturn: number; // amount
+  totalReturnRate: number; // percentage
 }
 
 // --- 홈 화면용 더미 데이터 타입 ---

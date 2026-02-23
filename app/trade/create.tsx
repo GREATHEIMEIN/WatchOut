@@ -1,5 +1,6 @@
 // 매물 등록 화면
 
+import { useEffect } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -16,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Header from '@/components/common/Header';
 import { COLORS, SPACING, RADIUS, BRANDS, CONDITIONS, KIT_OPTIONS } from '@/lib/constants';
 import { useTradeStore } from '@/store/useTradeStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import type { Condition, ItemType } from '@/types';
 
 const BRAND_OPTIONS = [...BRANDS, '기타'] as const;
@@ -33,21 +35,43 @@ export default function TradeCreateScreen() {
 
   const isWatch = formData.itemType === 'watch';
 
+  // 로그인 체크
+  useEffect(() => {
+    const { isLoggedIn } = useAuthStore.getState();
+    if (!isLoggedIn) {
+      Alert.alert(
+        '로그인 필요',
+        '매물 등록은 로그인 후 이용 가능합니다.',
+        [
+          { text: '취소', onPress: () => router.back() },
+          { text: '로그인', onPress: () => router.replace('/auth/login') },
+        ]
+      );
+    }
+  }, []);
+
   const handleTabChange = (tab: ItemType) => {
     resetForm();
     setFormField('itemType', tab);
   };
 
-  const handleSubmit = () => {
-    Alert.alert('등록 완료', '매물이 등록되었습니다 (Mock)', [
-      {
-        text: '확인',
-        onPress: () => {
-          resetForm();
-          router.back();
+  const handleSubmit = async () => {
+    const { createTradePost } = useTradeStore.getState();
+    const { success, error } = await createTradePost();
+
+    if (success) {
+      Alert.alert('등록 완료', '매물이 등록되었습니다', [
+        {
+          text: '확인',
+          onPress: () => {
+            resetForm();
+            router.back();
+          },
         },
-      },
-    ]);
+      ]);
+    } else {
+      Alert.alert('등록 실패', error || '매물 등록 중 문제가 발생했습니다');
+    }
   };
 
   const handleBack = () => {

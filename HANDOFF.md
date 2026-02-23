@@ -1,5 +1,5 @@
 # WATCHOUT — HANDOFF.md
-> **마지막 업데이트:** 2026-02-22 (SESSION 5 완료 — 시계거래 마켓플레이스)
+> **마지막 업데이트:** 2026-02-23 (SESSION 10 완료 — 전체 레이아웃 미세 조정 + UI 통일)
 > **현재 Phase:** Phase 1 — 앱 개발 시작
 
 ---
@@ -198,6 +198,37 @@ export const COLORS = {
 - [x] Mock 데이터 확장 (시계 7개, 용품 7개, description 추가)
 - [x] MockTradeItem/MockAccessoryItem 타입 확장 (상세 화면용 optional 필드)
 - [x] app/_layout.tsx에 trade/[id], trade/create 라우트 추가
+- [x] 매물 등록 화면 "기타" 브랜드 직접 입력 기능 추가
+- [x] 시세/시계거래 화면 간격 최적화 (ScrollView marginBottom, countRow padding 조정)
+- [x] FlatList → ScrollView 전환 (flex: 1 레이아웃 문제 근본 해결, 데이터 6-7개뿐이라 성능 문제 없음)
+- [x] useCommunityStore 생성 (store/useCommunityStore.ts — 필터 + 정렬)
+- [x] 카테고리 색상 유틸리티 (lib/utils.ts — getCategoryColor, getCategoryTextColor)
+- [x] CommunityPostCard 컴포넌트 (components/community/CommunityPostCard.tsx)
+- [x] 커뮤니티 리스트 화면 (app/community/index.tsx — 탭, 검색, 게시글 리스트, FAB)
+- [x] 게시글 상세 화면 (app/community/[id].tsx — 본문, 좋아요, 댓글 입력창)
+- [x] 글쓰기 화면 (app/community/write.tsx — 카테고리, 제목, 본문, 이미지 슬롯)
+- [x] MY 페이지 구현 (app/(tabs)/mypage.tsx — 프로필, 컬렉션 배너, 활동/설정 메뉴)
+- [x] 홈 화면 커뮤니티 네비게이션 연결 (app/(tabs)/index.tsx)
+- [x] app/_layout.tsx에 community/index, community/[id], community/write 라우트 추가
+- [x] useAuthStore 확장 (session, isLoading, initialize, login, register)
+- [x] 로그인 화면 구현 (app/auth/login.tsx)
+- [x] 회원가입 화면 구현 (app/auth/register.tsx)
+- [x] MY 페이지 로그인 연동 (조건부 렌더링, 로그아웃 동작)
+- [x] 라우트 가드 적용 (매물 등록, 글쓰기, 즉시매입, FAB)
+- [x] 앱 초기화 시 세션 복원 (app/_layout.tsx)
+- [x] auth/login, auth/register 라우트 추가
+- [x] useCollectionStore 구현 (store/useCollectionStore.ts — CRUD + 통계)
+- [x] CollectionCard 컴포넌트 (components/collection/CollectionCard.tsx)
+- [x] SummaryCard 컴포넌트 (components/collection/SummaryCard.tsx)
+- [x] ReturnChart 컴포넌트 (components/collection/ReturnChart.tsx)
+- [x] 컬렉션 메인 화면 (app/collection/index.tsx — 통계 + 리스트 + FAB)
+- [x] 시계 추가 화면 (app/collection/add.tsx — 브랜드/모델 선택 + 구매 정보)
+- [x] 컬렉션 상세 화면 (app/collection/[id].tsx — 가격 비교 + 차트 + 삭제)
+- [x] MY 페이지 컬렉션 연결 (라우트 가드 + 로그인 체크)
+- [x] CollectionRow, CollectionInsert, CollectionWithWatch, PortfolioStats 타입 추가
+- [x] 시세 화면 separator → divider(1px) 변경 (레이아웃 통일)
+- [x] 검색바/필터 간격 최적화 (paddingBottom 4px)
+- [x] 커뮤니티 listContainer marginBottom 조정 (8px)
 - [ ] Supabase에 마이그레이션 SQL 실행 (00001~00003)
 - [ ] Pretendard 폰트 적용
 
@@ -205,16 +236,175 @@ export const COLORS = {
 
 ## 🚀 다음 세션에서 할 일
 
-### SESSION 6: 크롤러 + 커뮤니티
-1. Python 크롤러 3개 개발 (하이시간, Chrono24, 바이버)
-2. 크롤러 → Supabase DB 연동
-3. 커뮤니티 리스트/상세/작성 화면
+### SESSION 11: Supabase 실제 데이터 연동 (Week 2)
+**목표:** Mock 데이터를 Supabase 실제 DB로 전환
 
-### SESSION 7: 내 컬렉션 + MY + 메시지
-1. 내 컬렉션 화면
-2. MY 페이지 (프로필, 설정)
-3. 1:1 메시지 기능
-4. Pretendard 폰트 적용
+1. **Supabase 마이그레이션 실행**
+   - 00001~00003 SQL 실행
+   - RLS 정책 확인
+   - Storage 버킷 생성
+
+2. **시드 데이터 삽입**
+   - watches 6개 + watch_prices 히스토리
+   - 테스트 trade_posts, community_posts
+
+3. **Store 실제 연동**
+   - usePriceStore.fetchWatches() 구현
+   - useTradeStore.fetchTradePosts() + createTradePost()
+   - useCommunityStore.fetchPosts() + createPost()
+   - useBuybackStore.submitRequest()
+
+4. **이미지 업로드**
+   - expo-image-picker 설치
+   - Supabase Storage 업로드 로직
+
+### SESSION 12: 카카오 로그인 + 프로필 편집 (Week 2)
+**목표:** 소셜 로그인 및 사용자 프로필 관리 기능 완성
+
+1. **카카오 로그인 연동** (Supabase Auth with OAuth)
+   - Kakao Developers에서 앱 등록
+   - Supabase OAuth 설정
+   - 카카오 로그인 버튼 실제 연동
+
+2. **프로필 편집 기능**
+   - 닉네임 변경
+   - 아바타 업로드 (Supabase Storage)
+   - 자기소개(bio) 입력
+
+3. **비밀번호 재설정**
+   - 이메일 링크 방식
+   - Supabase Auth 이메일 템플릿 설정
+
+### SESSION 13: 크롤러 개발 (Week 1 완료 목표)
+**목표:** 시세 데이터 자동 수집 및 DB 저장
+
+1. **Python 크롤러 개발 (crawlers/ 디렉토리)**
+   - `hisigan.py`: 하이시간 시세 크롤링
+   - `chrono24.py`: Chrono24 시세 크롤링
+   - `viver.py`: 바이버 시세 크롤링
+   - `scheduler.py`: 일 1회 자동 실행 스케줄러
+
+2. **Supabase 연동**
+   - 크롤링 데이터 → `watch_prices` 테이블 insert
+   - 신규 모델 발견 시 → `watches` 테이블 insert
+
+3. **Mock 데이터 대체**
+   - 실제 크롤링 데이터로 교체
+
+---
+
+## 📌 SESSION 10 완료 상세
+
+**구현된 기능:**
+- 시세 화면 separator(8px) → divider(1px) 변경으로 다른 화면과 통일
+- 검색바/필터 paddingBottom을 8px → 4px로 최적화하여 빈 공간 최소화
+- 커뮤니티 listContainer marginBottom 12px → 8px로 조정하여 일관성 유지
+- 커뮤니티 카운트 행 paddingTop 8px → 4px로 조정
+
+**기술적 특징:**
+- SPACING.xs: 4 상수 활용 (lib/constants.ts에 이미 정의됨)
+- divider 1px 통일: backgroundColor: COLORS.border 사용
+- compact 레이아웃: 검색바 ↔ 필터 ↔ 리스트 사이 빈 공간 제거
+- 커뮤니티 카드 배경 유지: 게시글 그룹 시각적 강조 효과
+
+**수정된 파일:**
+- app/(tabs)/price.tsx: separator → divider, searchSection/brandFilter paddingBottom 조정
+- app/(tabs)/trade.tsx: searchSection/filterRow paddingBottom 조정
+- app/(tabs)/community.tsx: countRow paddingTop, listContainer marginBottom 조정
+
+**검증 완료:**
+- SESSION 5에서 FlatList → ScrollView 전환 이미 완료
+- contentContainerStyle에 flexGrow: 1 미사용 (이미 준수)
+- placeholder 이미지 Ionicons 교체 완료 (SESSION 9)
+- 브랜드 칩 height: 32 고정 적용됨
+- collection/index.tsx는 이미 올바른 패턴 사용 중
+
+---
+
+## 📌 SESSION 9 완료 상세
+
+**구현된 기능:**
+- 내 컬렉션 메인: SummaryCard(통계), 시계 리스트, FAB 시계 추가 버튼
+- 시계 추가: 브랜드 선택 → 모델 선택 → 구매가/날짜/메모 입력
+- 컬렉션 상세: 구매가 vs 현재 시세 비교, 수익률 차트, 삭제 기능
+- 포트폴리오 통계: 총 보유 시계, 총 구매 금액, 현재 총 가치, 총 수익(금액+퍼센트)
+
+**기술적 특징:**
+- useCollectionStore: fetchMyCollection(LEFT JOIN + Promise.all), addToCollection(UNIQUE 제약), removeFromCollection, getStats
+- 수익률 계산: (currentPrice - purchasePrice) / purchasePrice * 100
+- UNIQUE 제약 처리: (user_id, watch_id) 중복 방지, 에러 코드 23505 체크
+- NULL 안전 계산: purchasePrice, currentPrice 모두 NULL 가능, 조건부 렌더링
+- 브랜드/모델 동적 로드: watches 테이블 DISTINCT brand, 브랜드별 필터링
+
+**컴포넌트 패턴:**
+- CollectionCard: PriceCard 패턴 재사용 (1-row 리스트, 52x52 이미지, gap: SPACING.md)
+- SummaryCard: 4개 통계 행 + 구분선
+- ReturnChart: 가로 바 차트 (최대 100%), green/red 조건부 색상
+- ScrollView + map 패턴 유지, FlatList 사용 안 함
+
+**파일 변경:**
+- 신규 7개: useCollectionStore.ts, CollectionCard.tsx, SummaryCard.tsx, ReturnChart.tsx, collection/index.tsx, collection/add.tsx, collection/[id].tsx
+- 수정 2개: types/index.ts (4개 타입 추가), mypage.tsx (handleCollection 라우팅)
+
+---
+
+## 📌 SESSION 7 완료 상세
+
+**구현된 기능:**
+- 로그인/회원가입: 이메일/비밀번호 방식, Supabase Auth 연동, 유효성 검증
+- 세션 관리: AsyncStorage 기반 세션 복원, onAuthStateChange 리스너
+- MY 페이지 연동: 로그인 상태에 따른 조건부 렌더링, 로그아웃 Alert 확인
+- 라우트 가드: 매물 등록/글쓰기/즉시매입 진입 시 로그인 체크, FAB 버튼 보호
+
+**기술적 특징:**
+- useAuthStore 확장: session, isLoading, initialize(), login(), register(), logout()
+- 앱 초기화: app/_layout.tsx에서 useEffect로 initialize() 호출
+- 로그인 화면: compact 레이아웃, 이메일/비밀번호, eye icon toggle, 카카오 버튼(UI만)
+- 회원가입: 이메일 형식 검증, 비밀번호 8자 이상, 비밀번호 일치, 닉네임 2자 이상
+- 라우트 가드: Alert 2버튼 (취소, 로그인), 로그인 화면으로 이동 옵션
+
+**파일 변경:**
+- 신규 2개: auth/login.tsx, auth/register.tsx
+- 수정 7개: useAuthStore.ts, mypage.tsx, _layout.tsx, trade/create.tsx, community/write.tsx, trade.tsx, community.tsx, BuybackSheet.tsx
+
+---
+
+## 📌 SESSION 6 완료 상세
+
+**구현된 기능:**
+- 커뮤니티 리스트: 카테고리 탭(전체/자유/질문/후기/정보), 공지 핀 고정, FAB 글쓰기
+- 게시글 상세: 카테고리 배지, 제목/본문, 작성자 정보, 좋아요 버튼, 댓글 입력창
+- 글쓰기: 카테고리 선택 4개 토글, 제목/본문 입력, 이미지 슬롯 placeholder, 유효성 검사
+- MY 페이지: 더미 프로필(손님 Lv.0), 컬렉션 배너, 활동/설정 메뉴 리스트
+
+**기술적 특징:**
+- useCommunityStore: 카테고리 필터 + 검색 + 공지 핀 정렬 로직
+- 카테고리 배지 색상 유틸 (lib/utils.ts): 공통 함수로 분리하여 재사용
+- ScrollView 패턴 일관성: SESSION 5에서 검증된 패턴 재사용
+- 홈 화면 연동: 빠른 메뉴/최신글 카드 → 커뮤니티 화면 네비게이션
+
+**파일 변경:**
+- 신규 6개: useCommunityStore, utils.ts, CommunityPostCard, community/index, community/[id], community/write
+- 수정 3개: mypage.tsx, index.tsx, _layout.tsx
+
+---
+
+## 📌 SESSION 5 완료 상세
+
+**구현된 기능:**
+- 시계거래 탭: 시계/용품 탭, 검색, 브랜드/카테고리 필터, 2컬럼 그리드
+- 매물 상세: 이미지 갤러리, 판매자 정보, 가격, 상세 정보 그리드, CTA 버튼
+- 매물 등록: 시계/용품별 폼, "기타" 브랜드 직접 입력, 5단계 유효성 검사
+
+**기술적 개선:**
+- FlatList → ScrollView 전환으로 flex: 1 레이아웃 문제 근본 해결
+- 데이터 6-7개 수준이므로 ScrollView로 충분 (성능 문제 없음)
+- 간격 최적화: marginBottom 12px, padding 8px로 통일
+
+**파일 변경:**
+- 신규 5개: useTradeStore, TradeCard, AccessoryCard, trade/[id], trade/create
+- 수정 4개: types/index.ts, mockData.ts, trade.tsx, _layout.tsx
+- 레이아웃 최적화 2개: price.tsx, trade.tsx (FlatList → ScrollView)
 
 ---
 

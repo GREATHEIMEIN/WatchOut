@@ -4,6 +4,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { StatusBar } from 'react-native';
 import 'react-native-reanimated';
+import { useAuthStore } from '@/store/useAuthStore';
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -18,6 +19,12 @@ export default function RootLayout() {
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
     // TODO: Pretendard 폰트 추가
   });
+  const { initialize } = useAuthStore();
+
+  // Initialize auth session on app start
+  useEffect(() => {
+    initialize();
+  }, []);
 
   useEffect(() => {
     if (error) throw error;
@@ -38,9 +45,13 @@ export default function RootLayout() {
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="auth/login" options={{ headerShown: false }} />
+        <Stack.Screen name="auth/register" options={{ headerShown: false }} />
         <Stack.Screen name="price/[id]" options={{ headerShown: false }} />
         <Stack.Screen name="trade/[id]" options={{ headerShown: false }} />
         <Stack.Screen name="trade/create" options={{ headerShown: false }} />
+        <Stack.Screen name="community/[id]" options={{ headerShown: false }} />
+        <Stack.Screen name="community/write" options={{ headerShown: false }} />
         <Stack.Screen name="+not-found" />
       </Stack>
     </>

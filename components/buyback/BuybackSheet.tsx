@@ -15,6 +15,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING, RADIUS, BRANDS, CONDITIONS, KIT_OPTIONS } from '@/lib/constants';
 import { useBuybackStore } from '@/store/useBuybackStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import type { Condition } from '@/types';
 
 const TOTAL_STEPS = 5;
@@ -36,11 +37,32 @@ const BuybackSheet = ({ visible, onClose }: BuybackSheetProps) => {
     onClose();
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (step < TOTAL_STEPS) {
       setStep(step + 1);
     } else {
-      setDone(true);
+      // 로그인 체크
+      const { isLoggedIn } = useAuthStore.getState();
+      if (!isLoggedIn) {
+        Alert.alert(
+          '로그인 필요',
+          '즉시매입 신청은 로그인 후 이용 가능합니다.\n로그인 화면은 MY 탭에서 접속할 수 있습니다.',
+          [
+            { text: '확인', onPress: handleClose },
+          ]
+        );
+        return;
+      }
+
+      // Supabase에 즉시매입 신청 제출
+      const { submitRequest } = useBuybackStore.getState();
+      const { success } = await submitRequest();
+
+      if (success) {
+        setDone(true);
+      } else {
+        Alert.alert('오류', '신청 중 문제가 발생했습니다. 다시 시도해주세요.');
+      }
     }
   };
 

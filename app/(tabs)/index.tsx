@@ -55,7 +55,11 @@ export default function HomeScreen() {
   const router = useRouter();
 
   const handleQuickMenu = (route: string) => {
-    if (route === 'community' || route === 'collection') {
+    if (route === 'community') {
+      router.push('/(tabs)/community');
+      return;
+    }
+    if (route === 'collection') {
       Alert.alert('준비 중', '다음 업데이트에서 만나요!');
       return;
     }
@@ -98,11 +102,15 @@ export default function HomeScreen() {
         </View>
 
         {/* 커뮤니티 최신글 */}
-        <SectionTitle title="커뮤니티 최신글" onMore={() => Alert.alert('준비 중', '다음 업데이트에서 만나요!')} />
+        <SectionTitle title="커뮤니티 최신글" onMore={() => router.push('/(tabs)/community')} />
         <View style={styles.communityCard}>
           {MOCK_COMMUNITY_POSTS.slice(0, 3).map((post, index) => (
             <View key={post.id}>
-              <View style={styles.communityItem}>
+              <TouchableOpacity
+                style={styles.communityItem}
+                onPress={() => router.push(`/community/${post.id}`)}
+                activeOpacity={0.7}
+              >
                 <View style={[styles.categoryBadge, { backgroundColor: getCategoryColor(post.category) }]}>
                   <Text style={[styles.categoryText, { color: getCategoryTextColor(post.category) }]}>
                     {post.category}
@@ -115,7 +123,7 @@ export default function HomeScreen() {
                   <Text style={styles.metaText}>❤️ {post.likes}</Text>
                   <Text style={styles.metaText}>{post.time}</Text>
                 </View>
-              </View>
+              </TouchableOpacity>
               {index < 2 && <View style={styles.divider} />}
             </View>
           ))}

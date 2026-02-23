@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import {
-  FlatList,
+  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
@@ -15,7 +15,6 @@ import { Ionicons } from '@expo/vector-icons';
 import Header from '@/components/common/Header';
 import PriceCard from '@/components/price/PriceCard';
 import { COLORS, RADIUS, SPACING } from '@/lib/constants';
-import { MOCK_WATCHES } from '@/lib/mockData';
 import { usePriceStore } from '@/store/usePriceStore';
 import type { WatchWithPrice } from '@/types';
 
@@ -24,18 +23,20 @@ const BRANDS = ['전체', 'Rolex', 'Omega', 'AP', 'Patek', 'Cartier'];
 export default function PriceScreen() {
   const router = useRouter();
   const {
-    setWatches,
+    loading,
+    error,
     searchQuery,
     setSearchQuery,
     selectedBrand,
     setSelectedBrand,
+    fetchWatches,
     getFilteredWatches,
   } = usePriceStore();
 
-  // Mock 데이터 로드
+  // Supabase에서 데이터 로드
   useEffect(() => {
-    setWatches(MOCK_WATCHES);
-  }, [setWatches]);
+    fetchWatches();
+  }, []);
 
   const filtered = getFilteredWatches();
 
@@ -76,7 +77,6 @@ export default function PriceScreen() {
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          style={{ marginBottom: 12 }}
           contentContainerStyle={styles.brandFilter}
         >
           {BRANDS.map((brand) => {
@@ -100,15 +100,44 @@ export default function PriceScreen() {
           <Text style={styles.countText}>{filtered.length}개 모델</Text>
         </View>
 
+        {/* 로딩 중 */}
+        {loading && (
+          <View style={styles.centerContainer}>
+            <ActivityIndicator size="large" color={COLORS.accent} />
+            <Text style={styles.loadingText}>시세 데이터를 불러오는 중...</Text>
+          </View>
+        )}
+
+        {/* 에러 */}
+        {!loading && error && (
+          <View style={styles.errorContainer}>
+            <Ionicons name="alert-circle-outline" size={40} color={COLORS.red} />
+            <Text style={styles.errorText}>{error}</Text>
+            <TouchableOpacity style={styles.retryButton} onPress={fetchWatches}>
+              <Text style={styles.retryButtonText}>다시 시도</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* 데이터 없음 */}
+        {!loading && !error && filtered.length === 0 && (
+          <View style={styles.emptyContainer}>
+            <Ionicons name="watch-outline" size={48} color={COLORS.sub} />
+            <Text style={styles.emptyText}>시세 데이터가 없습니다</Text>
+          </View>
+        )}
+
         {/* 시계 목록 */}
-        <View style={styles.listContainer}>
-          {filtered.map((item, index) => (
-            <View key={String(item.id)}>
-              <PriceCard watch={item} onPress={() => handlePressWatch(item)} />
-              {index < filtered.length - 1 && <View style={styles.separator} />}
-            </View>
-          ))}
-        </View>
+        {!loading && !error && filtered.length > 0 && (
+          <View style={styles.listContainer}>
+            {filtered.map((item, index) => (
+              <View key={String(item.id)}>
+                <PriceCard watch={item} onPress={() => handlePressWatch(item)} />
+                {index < filtered.length - 1 && <View style={styles.divider} />}
+              </View>
+            ))}
+          </View>
+        )}
       </ScrollView>
     </View>
   );
@@ -128,7 +157,7 @@ const styles = StyleSheet.create({
   searchSection: {
     paddingHorizontal: SPACING.lg,
     paddingTop: SPACING.sm,
-    paddingBottom: SPACING.sm,
+    paddingBottom: SPACING.xs,
   },
   searchBar: {
     flexDirection: 'row',
@@ -147,6 +176,7 @@ const styles = StyleSheet.create({
   },
   brandFilter: {
     paddingHorizontal: SPACING.lg,
+    paddingBottom: SPACING.xs,
     gap: 6,
   },
   brandChip: {
@@ -180,7 +210,56 @@ const styles = StyleSheet.create({
   listContainer: {
     paddingHorizontal: SPACING.lg,
   },
-  separator: {
-    height: SPACING.sm,
+  divider: {
+    height: 1,
+    backgroundColor: COLORS.border,
+  },
+  centerContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+    gap: SPACING.md,
+  },
+  loadingText: {
+    fontSize: 14,
+    color: COLORS.sub,
+    marginTop: SPACING.sm,
+  },
+  errorContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+    paddingHorizontal: SPACING.lg,
+    gap: SPACING.md,
+  },
+  errorText: {
+    fontSize: 14,
+    color: COLORS.sub,
+    textAlign: 'center',
+  },
+  retryButton: {
+    marginTop: SPACING.sm,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    backgroundColor: COLORS.accent,
+    borderRadius: RADIUS.button,
+  },
+  retryButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  emptyContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+    gap: SPACING.md,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: COLORS.sub,
   },
 });
