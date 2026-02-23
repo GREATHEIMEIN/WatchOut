@@ -6,9 +6,20 @@ import { formatRelativeTime } from '@/lib/format';
 import { useAuthStore } from './useAuthStore';
 import type { MockCommunityPost, PostCategory } from '@/types';
 
+interface MyPost {
+  id: number;
+  category: string;
+  title: string;
+  likesCount: number;
+  commentsCount: number;
+  createdAt: string;
+}
+
 interface CommunityState {
   // 데이터
   posts: MockCommunityPost[];
+  myPosts: MyPost[];
+  myPostsLoading: boolean;
 
   // 필터 상태
   selectedCategory: PostCategory | '전체';
@@ -27,6 +38,7 @@ interface CommunityState {
 
   // Supabase 액션
   fetchPosts: () => Promise<void>;
+  fetchMyPosts: (userId: string) => Promise<void>;
   createPost: (
     title: string,
     category: PostCategory,
@@ -40,6 +52,8 @@ interface CommunityState {
 export const useCommunityStore = create<CommunityState>((set, get) => ({
   // 초기 상태
   posts: [],
+  myPosts: [],
+  myPostsLoading: false,
   selectedCategory: '전체',
   searchQuery: '',
   loading: false,
@@ -55,6 +69,37 @@ export const useCommunityStore = create<CommunityState>((set, get) => ({
   setLoading: (loading) => set({ loading }),
 
   setError: (error) => set({ error }),
+
+  /**
+   * 내 게시글 조회 (userId 기준)
+   */
+  fetchMyPosts: async (userId: string) => {
+    set({ myPostsLoading: true });
+
+    try {
+      const { data, error } = await supabase
+        .from('community_posts')
+        .select('id, category, title, likes_count, comments_count, created_at')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const myPosts: MyPost[] = (data || []).map((post: any) => ({
+        id: post.id,
+        category: post.category,
+        title: post.title,
+        likesCount: post.likes_count,
+        commentsCount: post.comments_count,
+        createdAt: post.created_at,
+      }));
+
+      set({ myPosts, myPostsLoading: false });
+    } catch (error) {
+      console.error('fetchMyPosts error:', error);
+      set({ myPostsLoading: false });
+    }
+  },
 
   /**
    * Supabase에서 커뮤니티 게시글 조회

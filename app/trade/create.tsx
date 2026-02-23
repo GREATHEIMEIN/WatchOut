@@ -1,8 +1,10 @@
 // 매물 등록 화면
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -12,10 +14,12 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Header from '@/components/common/Header';
 import { COLORS, SPACING, RADIUS, BRANDS, CONDITIONS, KIT_OPTIONS } from '@/lib/constants';
+import { requireAuth } from '@/lib/authGuard';
 import { useTradeStore } from '@/store/useTradeStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import type { Condition, ItemType } from '@/types';
@@ -32,23 +36,46 @@ const TABS: { key: ItemType; label: string }[] = [
 export default function TradeCreateScreen() {
   const router = useRouter();
   const { formData, setFormField, toggleFormKit, resetForm, isFormValid } = useTradeStore();
+  const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
 
   const isWatch = formData.itemType === 'watch';
 
   // 로그인 체크
   useEffect(() => {
     const { isLoggedIn } = useAuthStore.getState();
-    if (!isLoggedIn) {
-      Alert.alert(
-        '로그인 필요',
-        '매물 등록은 로그인 후 이용 가능합니다.',
-        [
-          { text: '취소', onPress: () => router.back() },
-          { text: '로그인', onPress: () => router.replace('/auth/login') },
-        ]
-      );
-    }
+    if (!requireAuth(router, isLoggedIn, '매물 등록')) router.back();
   }, []);
+
+  // 사진 선택 + 업로드
+  const handlePickPhoto = async (index: number) => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('권한 필요', '사진 접근 권한이 필요합니다');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.8,
+    });
+    if (!result.canceled) {
+      setUploadingIndex(index);
+      const uri = result.assets[0].uri;
+      const { uploadImages } = useTradeStore.getState();
+      const urls = await uploadImages([uri]);
+      if (urls.length > 0) {
+        const newPhotos = [...formData.photos];
+        newPhotos[index] = urls[0];
+        // 빈 슬롯 제거하지 않고 인덱스 유지
+        while (newPhotos.length <= index) newPhotos.push('');
+        newPhotos[index] = urls[0];
+        setFormField('photos', newPhotos.filter(Boolean));
+      } else {
+        Alert.alert('오류', '사진 업로드에 실패했습니다');
+      }
+      setUploadingIndex(null);
+    }
+  };
 
   const handleTabChange = (tab: ItemType) => {
     resetForm();
@@ -334,16 +361,28 @@ export default function TradeCreateScreen() {
       {/* 사진 첨부 */}
       <Text style={styles.sectionLabel}>사진 (최소 3장)</Text>
       <View style={styles.photoGrid}>
-        {['사진 1 *', '사진 2 *', '사진 3 *', '추가', '추가'].map((label, i) => (
-          <TouchableOpacity
-            key={i}
-            style={styles.photoBox}
-            onPress={() => Alert.alert('준비 중', '사진 기능은 다음 업데이트에서 제공됩니다.')}
-          >
-            <Ionicons name="camera-outline" size={24} color={COLORS.sub} />
-            <Text style={styles.photoLabel}>{label}</Text>
-          </TouchableOpacity>
-        ))}
+        {['사진 1 *', '사진 2 *', '사진 3 *', '추가', '추가'].map((label, i) => {
+          const uploadedUri = formData.photos[i];
+          const isUploading = uploadingIndex === i;
+          return (
+            <TouchableOpacity
+              key={i}
+              style={styles.photoBox}
+              onPress={() => handlePickPhoto(i)}
+            >
+              {isUploading ? (
+                <ActivityIndicator size="small" color={COLORS.accent} />
+              ) : uploadedUri ? (
+                <Image source={{ uri: uploadedUri }} style={styles.photoImage} />
+              ) : (
+                <>
+                  <Ionicons name="camera-outline" size={24} color={COLORS.sub} />
+                  <Text style={styles.photoLabel}>{label}</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
       {/* 상세 설명 */}
@@ -665,6 +704,11 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: COLORS.sub,
     fontWeight: '500',
+  },
+  photoImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: RADIUS.card,
   },
 
   // 하단 등록 버튼

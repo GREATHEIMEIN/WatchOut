@@ -11,6 +11,12 @@ export const COLORS = {
   red: '#FF3B30',
   orange: '#FF9500',
   tag: '#F2F2F7',
+  // 다크 테마 / 골드 액센트
+  headerBg: '#0C0C14',
+  tabBg: '#0C0C14',
+  pageBg: '#F5F5F7',
+  gold: '#C9A84C',
+  goldMuted: '#F0E4C2',
 } as const;
 
 export const FONTS = {

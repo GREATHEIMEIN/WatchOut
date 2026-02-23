@@ -3,7 +3,6 @@
 import { useEffect } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   ScrollView,
   StyleSheet,
   Text,
@@ -15,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Header from '@/components/common/Header';
 import CommunityPostCard from '@/components/community/CommunityPostCard';
 import { COLORS, RADIUS, SPACING } from '@/lib/constants';
+import { requireAuth } from '@/lib/authGuard';
 import { useCommunityStore } from '@/store/useCommunityStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import type { PostCategory } from '@/types';
@@ -118,18 +118,8 @@ export default function CommunityScreen() {
       <TouchableOpacity
         style={styles.fab}
         onPress={() => {
-          console.log('[Community] 글쓰기 버튼 클릭됨!');
           const { isLoggedIn } = useAuthStore.getState();
-          console.log('[Community] 로그인 상태:', isLoggedIn);
-
-          if (!isLoggedIn) {
-            console.log('[Community] 비로그인 → 로그인 페이지로 이동');
-            router.push('/auth/login');
-            return;
-          }
-
-          console.log('[Community] 로그인 상태 → /community/write로 이동');
-          router.push('/community/write');
+          if (requireAuth(router, isLoggedIn, '글쓰기')) router.push('/community/write');
         }}
         activeOpacity={0.8}
       >

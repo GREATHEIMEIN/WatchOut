@@ -1,194 +1,269 @@
-// 홈 탭 화면 — v5 HomeScreen 기반
+// 홈 탭 화면 — SESSION 17 리디자인
 
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Header from '@/components/common/Header';
+import NotificationBell from '@/components/common/NotificationBell';
+import SparkLine from '@/components/price/SparkLine';
 import { COLORS, SPACING, RADIUS } from '@/lib/constants';
-import { formatPrice } from '@/lib/format';
+import { formatPrice, formatPercent } from '@/lib/format';
 import {
   MOCK_COMMUNITY_POSTS,
   MOCK_TRADE_ITEMS,
   MOCK_NEWS,
+  MOCK_WATCHES,
 } from '@/lib/mockData';
+import type { WatchWithPrice, MockTradeItem, MockNews, MockCommunityPost } from '@/types';
 
-// 섹션 타이틀 컴포넌트
-const SectionTitle = ({ title, onMore }: { title: string; onMore?: () => void }) => (
+// 빠른 액션 데이터
+const QUICK_ACTIONS = [
+  { emoji: '📊', label: '시세', route: '/(tabs)/price' },
+  { emoji: '⌚', label: '내 컬렉션', route: '/collection' },
+  { emoji: '🏷️', label: '사고/팔기', route: '/(tabs)/trade' },
+  { emoji: '💬', label: '커뮤니티', route: '/(tabs)/community' },
+] as const;
+
+// 섹션 헤더
+const SectionHeader = ({
+  label,
+  title,
+  onMore,
+}: {
+  label: string;
+  title: string;
+  onMore?: () => void;
+}) => (
   <View style={styles.sectionHeader}>
-    <Text style={styles.sectionTitle}>{title}</Text>
+    <View>
+      <Text style={styles.sectionLabel}>{label}</Text>
+      <Text style={styles.sectionTitle}>{title}</Text>
+    </View>
     {onMore && (
-      <TouchableOpacity onPress={onMore}>
+      <TouchableOpacity onPress={onMore} activeOpacity={0.7}>
         <Text style={styles.sectionMore}>더보기 →</Text>
       </TouchableOpacity>
     )}
   </View>
 );
 
-// 카테고리별 배지 색상
-const getCategoryColor = (category: string) => {
-  switch (category) {
-    case '질문': return '#EEF4FF';
-    case '후기': return '#E8F8EE';
-    case '공지': return '#FEF0F0';
-    default: return COLORS.tag;
-  }
+// 시세 카드
+const PriceCard = ({ watch }: { watch: WatchWithPrice }) => {
+  const isUp = watch.change >= 0;
+  return (
+    <TouchableOpacity style={styles.priceCard} activeOpacity={0.7}>
+      <Text style={styles.priceCardBrand} numberOfLines={1}>{watch.brand}</Text>
+      <Text style={styles.priceCardModel} numberOfLines={1}>{watch.model}</Text>
+      <View style={styles.priceCardChart}>
+        <SparkLine
+          data={watch.history}
+          width={80}
+          height={28}
+          color={isUp ? COLORS.green : COLORS.red}
+        />
+      </View>
+      <Text style={styles.priceCardPrice}>{formatPrice(watch.price)}</Text>
+      <View style={[styles.changeChip, { backgroundColor: isUp ? '#E8F8EE' : '#FEF0F0' }]}>
+        <Text style={[styles.changeChipText, { color: isUp ? COLORS.green : COLORS.red }]}>
+          {formatPercent(watch.change)}
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
 };
 
-const getCategoryTextColor = (category: string) => {
-  switch (category) {
-    case '질문': return '#3B82F6';
-    case '후기': return '#22C55E';
-    case '공지': return COLORS.red;
-    default: return COLORS.sub;
-  }
+// 매물 리스트 행
+const TradeListRow = ({ item, isLast }: { item: MockTradeItem; isLast: boolean }) => {
+  const router = useRouter();
+  return (
+    <>
+      <TouchableOpacity
+        style={styles.tradeRow}
+        onPress={() => router.push(`/trade/${item.id}`)}
+        activeOpacity={0.7}
+      >
+        <View style={styles.tradeRowImage}>
+          <Ionicons name="watch-outline" size={22} color={COLORS.sub} />
+        </View>
+        <View style={styles.tradeRowInfo}>
+          <Text style={styles.tradeRowTitle} numberOfLines={1}>
+            {item.brand} {item.model}
+          </Text>
+          <Text style={styles.tradeRowMeta} numberOfLines={1}>
+            {item.condition} · {item.year} · {item.loc}
+          </Text>
+        </View>
+        <View style={styles.tradeRowRight}>
+          <Text style={styles.tradeRowPrice}>{formatPrice(item.price)}</Text>
+          <View
+            style={[
+              styles.typeBadge,
+              { backgroundColor: item.type === 'sell' ? '#EEF4FF' : '#FFF4E6' },
+            ]}
+          >
+            <Text
+              style={[
+                styles.typeBadgeText,
+                { color: item.type === 'sell' ? COLORS.accent : COLORS.orange },
+              ]}
+            >
+              {item.type === 'sell' ? '판매' : '구매'}
+            </Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+      {!isLast && <View style={styles.divider} />}
+    </>
+  );
 };
 
-// 빠른 메뉴 데이터
-const QUICK_MENUS = [
-  { icon: '💬', label: '자유게시판', color: '#EEF4FF', route: 'community' },
-  { icon: '⌚', label: '내 컬렉션', color: '#FFF4E6', route: 'collection' },
-  { icon: '💰', label: '즉시매입', color: '#E8F8EE', route: '/(tabs)/buyback' },
-  { icon: '🤝', label: '시계거래', color: '#FEF0F0', route: '/(tabs)/trade' },
-] as const;
+// 뉴스 행
+const NewsRow = ({ news, isLast }: { news: MockNews; isLast: boolean }) => (
+  <>
+    <View style={styles.newsRow}>
+      <View style={styles.newsBadge}>
+        <Text style={styles.newsBadgeText}>{news.source}</Text>
+      </View>
+      <Text style={styles.newsTitle} numberOfLines={2}>{news.title}</Text>
+      <Text style={styles.newsMeta}>{news.time}</Text>
+    </View>
+    {!isLast && <View style={styles.divider} />}
+  </>
+);
+
+// 커뮤니티 행
+const CommunityRow = ({ post, isLast }: { post: MockCommunityPost; isLast: boolean }) => {
+  const router = useRouter();
+  return (
+    <>
+      <TouchableOpacity
+        style={styles.communityRow}
+        onPress={() => router.push(`/community/${post.id}`)}
+        activeOpacity={0.7}
+      >
+        <View style={styles.communityRowTop}>
+          <View style={styles.categoryChip}>
+            <Text style={styles.categoryChipText}>{post.category}</Text>
+          </View>
+        </View>
+        <Text style={styles.communityTitle} numberOfLines={1}>{post.title}</Text>
+        <View style={styles.communityMeta}>
+          <Text style={styles.communityMetaText}>{post.author}</Text>
+          <Text style={styles.communityMetaText}>💬 {post.comments}</Text>
+          <Text style={styles.communityMetaText}>❤️ {post.likes}</Text>
+          <Text style={styles.communityMetaText}>{post.time}</Text>
+        </View>
+      </TouchableOpacity>
+      {!isLast && <View style={styles.divider} />}
+    </>
+  );
+};
 
 export default function HomeScreen() {
   const router = useRouter();
 
-  const handleQuickMenu = (route: string) => {
-    if (route === 'community') {
-      router.push('/(tabs)/community');
-      return;
-    }
-    if (route === 'collection') {
-      Alert.alert('준비 중', '다음 업데이트에서 만나요!');
-      return;
-    }
-    router.push(route as '/(tabs)/buyback');
+  const handleQuickAction = (route: string) => {
+    router.push(route as '/(tabs)/price');
   };
 
   return (
     <View style={styles.container}>
-      <Header title="WATCHOUT" />
+      <Header
+        title="WATCHOUT"
+        dark
+        right={<NotificationBell color="#FFFFFF" />}
+      />
+
       <ScrollView showsVerticalScrollIndicator={false}>
 
-        {/* 빠른 메뉴 2x2 */}
-        <View style={styles.quickMenuSection}>
-          <View style={styles.quickMenuRow}>
-            {QUICK_MENUS.slice(0, 2).map((menu) => (
-              <TouchableOpacity
-                key={menu.label}
-                style={[styles.quickMenuItem, { backgroundColor: menu.color }]}
-                onPress={() => handleQuickMenu(menu.route)}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.quickMenuIcon}>{menu.icon}</Text>
-                <Text style={styles.quickMenuLabel}>{menu.label}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-          <View style={styles.quickMenuRow}>
-            {QUICK_MENUS.slice(2, 4).map((menu) => (
-              <TouchableOpacity
-                key={menu.label}
-                style={[styles.quickMenuItem, { backgroundColor: menu.color }]}
-                onPress={() => handleQuickMenu(menu.route)}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.quickMenuIcon}>{menu.icon}</Text>
-                <Text style={styles.quickMenuLabel}>{menu.label}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        {/* 커뮤니티 최신글 */}
-        <SectionTitle title="커뮤니티 최신글" onMore={() => router.push('/(tabs)/community')} />
-        <View style={styles.communityCard}>
-          {MOCK_COMMUNITY_POSTS.slice(0, 3).map((post, index) => (
-            <View key={post.id}>
-              <TouchableOpacity
-                style={styles.communityItem}
-                onPress={() => router.push(`/community/${post.id}`)}
-                activeOpacity={0.7}
-              >
-                <View style={[styles.categoryBadge, { backgroundColor: getCategoryColor(post.category) }]}>
-                  <Text style={[styles.categoryText, { color: getCategoryTextColor(post.category) }]}>
-                    {post.category}
-                  </Text>
-                </View>
-                <Text style={styles.communityTitle} numberOfLines={1}>{post.title}</Text>
-                <View style={styles.communityMeta}>
-                  <Text style={styles.metaText}>{post.author}</Text>
-                  <Text style={styles.metaText}>💬 {post.comments}</Text>
-                  <Text style={styles.metaText}>❤️ {post.likes}</Text>
-                  <Text style={styles.metaText}>{post.time}</Text>
-                </View>
-              </TouchableOpacity>
-              {index < 2 && <View style={styles.divider} />}
-            </View>
+        {/* Quick Actions */}
+        <View style={styles.quickActionsRow}>
+          {QUICK_ACTIONS.map((action) => (
+            <TouchableOpacity
+              key={action.label}
+              style={styles.quickActionItem}
+              onPress={() => handleQuickAction(action.route)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.quickActionIconBox}>
+                <Text style={styles.quickActionEmoji}>{action.emoji}</Text>
+              </View>
+              <Text style={styles.quickActionLabel}>{action.label}</Text>
+            </TouchableOpacity>
           ))}
         </View>
 
-        {/* 시계거래 최신 매물 */}
-        <SectionTitle title="시계거래 최신 매물" onMore={() => router.push('/(tabs)/trade')} />
+        {/* MARKET 섹션 */}
+        <SectionHeader
+          label="MARKET"
+          title="실시간 시세"
+          onMore={() => router.push('/(tabs)/price')}
+        />
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.tradeScrollContent}
+          contentContainerStyle={styles.priceScrollContent}
         >
-          {MOCK_TRADE_ITEMS.map((item) => (
-            <TouchableOpacity key={item.id} style={styles.tradeCard} activeOpacity={0.7}>
-              {/* 시계 이미지 placeholder + 배지 */}
-              <View style={styles.tradeImageBox}>
-                <Ionicons name="watch-outline" size={28} color={COLORS.sub} />
-                <View style={[
-                  styles.tradeBadge,
-                  { backgroundColor: item.type === 'sell' ? COLORS.accent : COLORS.orange },
-                ]}>
-                  <Text style={styles.tradeBadgeText}>
-                    {item.type === 'sell' ? '판매' : '구매'}
-                  </Text>
-                </View>
-              </View>
-              <Text style={styles.tradeBrand} numberOfLines={1}>{item.brand} {item.model}</Text>
-              <Text style={styles.tradeInfo}>{item.condition} · {item.year} · {item.loc}</Text>
-              <Text style={styles.tradePrice}>{formatPrice(item.price)}</Text>
-              <Text style={styles.tradeAuthor}>{item.author} · {item.time}</Text>
-            </TouchableOpacity>
+          {MOCK_WATCHES.slice(0, 5).map((watch) => (
+            <PriceCard key={watch.id} watch={watch} />
           ))}
         </ScrollView>
 
-        {/* 시계 뉴스 */}
-        <SectionTitle title="시계 뉴스" />
-        <View style={styles.newsCard}>
-          {MOCK_NEWS.map((news, index) => (
-            <View key={news.id}>
-              <View style={styles.newsItem}>
-                <Text style={styles.newsTitle} numberOfLines={2}>{news.title}</Text>
-                <Text style={styles.newsMeta}>{news.source} · {news.time}</Text>
-              </View>
-              {index < MOCK_NEWS.length - 1 && <View style={styles.divider} />}
-            </View>
+        {/* 프리미엄 다크 배너 */}
+        <View style={styles.darkBanner}>
+          <Text style={styles.bannerLabel}>프리미엄 시계 서비스</Text>
+          <Text style={styles.bannerHeadline}>즉시매입 · 교환거래</Text>
+          <Text style={styles.bannerSub}>전문 감정사가 직접 방문합니다</Text>
+          <View style={styles.bannerBtnRow}>
+            <TouchableOpacity
+              style={styles.bannerBtnPrimary}
+              onPress={() => router.push('/(tabs)/buyback')}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.bannerBtnPrimaryText}>즉시매입 신청</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.bannerBtnSecondary}
+              onPress={() => router.push('/(tabs)/exchange')}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.bannerBtnSecondaryText}>교환거래 보기</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* MARKETPLACE 섹션 */}
+        <SectionHeader
+          label="MARKETPLACE"
+          title="최신 매물"
+          onMore={() => router.push('/(tabs)/trade')}
+        />
+        <View style={styles.listCard}>
+          {MOCK_TRADE_ITEMS.slice(0, 3).map((item, i) => (
+            <TradeListRow key={item.id} item={item} isLast={i === 2} />
           ))}
         </View>
 
-        {/* 즉시매입 미니배너 */}
-        <TouchableOpacity
-          style={styles.miniBanner}
-          onPress={() => router.push('/(tabs)/buyback')}
-          activeOpacity={0.8}
-        >
-          <View style={styles.miniBannerLeft}>
-            <Text style={styles.miniBannerIcon}>💰</Text>
-            <View>
-              <Text style={styles.miniBannerTitle}>찾아가서 최고가로 매입</Text>
-              <Text style={styles.miniBannerSub}>출장방문 · 현장감정 · 즉시입금</Text>
-            </View>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
+        {/* NEWS 섹션 */}
+        <SectionHeader label="NEWS" title="시계 뉴스" />
+        <View style={styles.listCard}>
+          {MOCK_NEWS.slice(0, 3).map((news, i) => (
+            <NewsRow key={news.id} news={news} isLast={i === 2} />
+          ))}
+        </View>
 
-        {/* 하단 여백 */}
+        {/* COMMUNITY 섹션 */}
+        <SectionHeader
+          label="COMMUNITY"
+          title="인기 게시글"
+          onMore={() => router.push('/(tabs)/community')}
+        />
+        <View style={styles.listCard}>
+          {MOCK_COMMUNITY_POSTS.slice(0, 3).map((post, i) => (
+            <CommunityRow key={post.id} post={post} isLast={i === 2} />
+          ))}
+        </View>
+
         <View style={{ height: 100 }} />
       </ScrollView>
     </View>
@@ -198,196 +273,293 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.bg,
+    backgroundColor: COLORS.pageBg,
   },
-  // 빠른 메뉴
-  quickMenuSection: {
-    padding: SPACING.lg,
-    gap: SPACING.sm,
-  },
-  quickMenuRow: {
+
+  // Quick Actions
+  quickActionsRow: {
     flexDirection: 'row',
-    gap: SPACING.sm,
+    marginHorizontal: SPACING.lg,
+    marginTop: SPACING.lg,
+    gap: 10,
   },
-  quickMenuItem: {
+  quickActionItem: {
     flex: 1,
-    borderRadius: RADIUS.card,
-    padding: 14,
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    paddingVertical: 14,
     alignItems: 'center',
     gap: 6,
   },
-  quickMenuIcon: {
-    fontSize: 22,
+  quickActionIconBox: {
+    width: 54,
+    height: 54,
+    borderRadius: 16,
+    backgroundColor: '#F0F0F3',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  quickMenuLabel: {
-    fontSize: 11,
+  quickActionEmoji: {
+    fontSize: 24,
+  },
+  quickActionLabel: {
+    fontSize: 12,
     fontWeight: '600',
     color: COLORS.text,
   },
+
   // 섹션 헤더
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: SPACING.lg,
-    paddingTop: SPACING.base,
-    paddingBottom: SPACING.sm,
+    alignItems: 'flex-end',
+    marginHorizontal: SPACING.lg,
+    marginTop: SPACING.xl,
+    marginBottom: SPACING.md,
+  },
+  sectionLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 1.2,
+    color: COLORS.gold,
+    marginBottom: 2,
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 18,
+    fontWeight: '800',
     color: COLORS.text,
+    letterSpacing: -0.5,
   },
   sectionMore: {
     fontSize: 12,
     fontWeight: '500',
     color: COLORS.sub,
   },
-  // 커뮤니티
-  communityCard: {
+
+  // 시세 카드 (수평 스크롤)
+  priceScrollContent: {
+    paddingHorizontal: SPACING.lg,
+    gap: 12,
+    paddingBottom: 4,
+  },
+  priceCard: {
+    width: 140,
+    backgroundColor: COLORS.card,
+    borderRadius: RADIUS.card,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  priceCardBrand: {
+    fontSize: 11,
+    color: COLORS.sub,
+    marginBottom: 2,
+  },
+  priceCardModel: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginBottom: SPACING.sm,
+  },
+  priceCardChart: {
+    marginBottom: SPACING.sm,
+  },
+  priceCardPrice: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: COLORS.text,
+    marginBottom: 6,
+  },
+  changeChip: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  changeChipText: {
+    fontSize: 10,
+    fontWeight: '700',
+  },
+
+  // 프리미엄 다크 배너
+  darkBanner: {
+    marginHorizontal: SPACING.lg,
+    marginTop: SPACING.xl,
+    backgroundColor: '#0C0C14',
+    borderRadius: 16,
+    padding: SPACING.lg,
+  },
+  bannerLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: COLORS.gold,
+    letterSpacing: 0.5,
+    marginBottom: 6,
+  },
+  bannerHeadline: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: -0.5,
+    marginBottom: 6,
+  },
+  bannerSub: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.5)',
+    marginBottom: SPACING.base,
+  },
+  bannerBtnRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  bannerBtnPrimary: {
+    flex: 1,
+    backgroundColor: COLORS.gold,
+    paddingVertical: 12,
+    borderRadius: RADIUS.button,
+    alignItems: 'center',
+  },
+  bannerBtnPrimaryText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  bannerBtnSecondary: {
+    flex: 1,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    paddingVertical: 12,
+    borderRadius: RADIUS.button,
+    alignItems: 'center',
+  },
+  bannerBtnSecondaryText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.75)',
+  },
+
+  // 공통 리스트 카드
+  listCard: {
     marginHorizontal: SPACING.lg,
     backgroundColor: COLORS.card,
     borderRadius: RADIUS.card,
     borderWidth: 1,
     borderColor: COLORS.border,
-    padding: SPACING.base,
-  },
-  communityItem: {
-    paddingVertical: SPACING.sm,
-  },
-  categoryBadge: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
-    marginBottom: 4,
-  },
-  categoryText: {
-    fontSize: 10,
-    fontWeight: '600',
-  },
-  communityTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.text,
-    marginBottom: 4,
-  },
-  communityMeta: {
-    flexDirection: 'row',
-    gap: SPACING.sm,
-  },
-  metaText: {
-    fontSize: 11,
-    color: COLORS.sub,
+    overflow: 'hidden',
   },
   divider: {
     height: 1,
     backgroundColor: COLORS.border,
+    marginHorizontal: SPACING.base,
   },
-  // 시계거래 매물 (수평 스크롤)
-  tradeScrollContent: {
-    paddingHorizontal: SPACING.lg,
-    gap: SPACING.sm,
+
+  // 매물 리스트 행
+  tradeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: SPACING.base,
+    gap: 12,
   },
-  tradeCard: {
-    width: 200,
-    backgroundColor: COLORS.card,
-    borderRadius: RADIUS.card,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    padding: SPACING.md,
-  },
-  tradeImageBox: {
-    height: 80,
+  tradeRowImage: {
+    width: 44,
+    height: 44,
     borderRadius: 10,
     backgroundColor: COLORS.tag,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: SPACING.sm,
   },
-  tradeBadge: {
-    position: 'absolute',
-    top: 6,
-    left: 6,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
+  tradeRowInfo: {
+    flex: 1,
   },
-  tradeBadgeText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  tradeBrand: {
-    fontSize: 13,
+  tradeRowTitle: {
+    fontSize: 14,
     fontWeight: '600',
     color: COLORS.text,
-    marginBottom: 2,
+    marginBottom: 3,
   },
-  tradeInfo: {
+  tradeRowMeta: {
     fontSize: 11,
     color: COLORS.sub,
-    marginBottom: 4,
   },
-  tradePrice: {
-    fontSize: 15,
-    fontWeight: '800',
+  tradeRowRight: {
+    alignItems: 'flex-end',
+    gap: 4,
+  },
+  tradeRowPrice: {
+    fontSize: 14,
+    fontWeight: '700',
     color: COLORS.text,
+  },
+  typeBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 5,
+  },
+  typeBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+  },
+
+  // 뉴스 행
+  newsRow: {
+    padding: SPACING.base,
+    gap: 5,
+  },
+  newsBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: COLORS.goldMuted,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 5,
     marginBottom: 4,
   },
-  tradeAuthor: {
+  newsBadgeText: {
     fontSize: 10,
-    color: COLORS.sub,
-  },
-  // 뉴스
-  newsCard: {
-    marginHorizontal: SPACING.lg,
-    backgroundColor: COLORS.card,
-    borderRadius: RADIUS.card,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    padding: SPACING.base,
-  },
-  newsItem: {
-    paddingVertical: SPACING.sm,
+    fontWeight: '600',
+    color: COLORS.gold,
   },
   newsTitle: {
     fontSize: 14,
     fontWeight: '600',
     color: COLORS.text,
-    marginBottom: 4,
+    lineHeight: 20,
   },
   newsMeta: {
     fontSize: 11,
     color: COLORS.sub,
-  },
-  // 즉시매입 미니배너
-  miniBanner: {
-    marginHorizontal: SPACING.lg,
-    marginTop: SPACING.lg,
-    backgroundColor: COLORS.text,
-    borderRadius: RADIUS.card,
-    padding: SPACING.base,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  miniBannerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.md,
-  },
-  miniBannerIcon: {
-    fontSize: 28,
-  },
-  miniBannerTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  miniBannerSub: {
-    fontSize: 11,
-    color: '#AAAAAA',
     marginTop: 2,
+  },
+
+  // 커뮤니티 행
+  communityRow: {
+    padding: SPACING.base,
+  },
+  communityRowTop: {
+    marginBottom: 5,
+  },
+  categoryChip: {
+    alignSelf: 'flex-start',
+    backgroundColor: COLORS.goldMuted,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 5,
+  },
+  categoryChipText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: COLORS.gold,
+  },
+  communityTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.text,
+    marginBottom: 5,
+  },
+  communityMeta: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
+  },
+  communityMetaText: {
+    fontSize: 11,
+    color: COLORS.sub,
   },
 });

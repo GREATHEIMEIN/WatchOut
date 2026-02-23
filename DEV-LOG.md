@@ -5,6 +5,565 @@
 
 ---
 
+## 2026-02-23 — 채팅 이미지 전송
+
+### 완료
+- [x] `expo-image-manipulator@~14.0.8` 설치
+- [x] `store/useChatStore.ts` — `sendImageMessage(roomId, imageUri)` 액션 추가
+  - expo-image-manipulator로 리사이즈 (max 1024px, JPEG quality 0.7)
+  - Supabase Storage `chat-images` 버킷에 `chat/{roomId}/{userId}_{ts}.jpg` 업로드
+  - `chat_messages` INSERT (message_type: 'image', message: 공개 URL)
+  - `chat_rooms` last_message='사진' 업데이트 + 상대방 unread++
+  - Supabase 미연결 시 리사이즈된 로컬 URI로 mock 모드 동작
+- [x] `app/(tabs)/chat/[roomId].tsx` — 이미지 전송 + 뷰어
+  - 입력창 좌측 📎(`attach` 아이콘) 버튼 → `handleImagePick`
+  - expo-image-picker 갤러리 선택, 권한 체크
+  - 이미지 메시지 = 200×200 둥근 썸네일 (내/상대방 동일 크기, borderRadius 분기)
+  - 터치 → `Modal` 전체화면 뷰어 (검은 오버레이 + X 닫기 버튼)
+- [x] TypeScript 컴파일 검증 통과 (tsc --noEmit)
+
+### 핵심 패턴
+```typescript
+// 리사이즈 (동적 import로 타입 충돌 회피)
+const resized = await manipulate(imageUri, [{ resize: { width: 1024 } }], {
+  compress: 0.7, format: SaveFormat.JPEG,
+});
+
+// Storage 업로드 (fetch → blob)
+const blob = await (await fetch(resized.uri)).blob();
+await supabase.storage.from('chat-images').upload(fileName, blob, { contentType: 'image/jpeg' });
+
+// 이미지 메시지 렌더링
+{isImage && (
+  <TouchableOpacity onPress={() => setViewerUri(msg.message)}>
+    <Image source={{ uri: msg.message }} style={styles.imageBubble} resizeMode="cover" />
+  </TouchableOpacity>
+)}
+```
+
+### 수정된 파일 (2개)
+- `store/useChatStore.ts` — `sendImageMessage` 액션 추가
+- `app/(tabs)/chat/[roomId].tsx` — 📎 버튼, 이미지 버블, Modal 뷰어
+
+---
+
+## 2026-02-23 — SESSION 17 후속: 홈 화면 리디자인 + 탭 구조 변경
+
+### 완료
+- [x] `lib/constants.ts` — COLORS에 5개 추가: headerBg('#0C0C14'), tabBg('#0C0C14'), pageBg('#F5F5F7'), gold('#C9A84C'), goldMuted('#F0E4C2')
+- [x] `components/common/Header.tsx` — `dark?: boolean` prop: true 시 headerBg 배경, 흰색 타이틀/아이콘, 반투명 보더
+- [x] `components/common/NotificationBell.tsx` — `color?: string` prop: 미전달 시 COLORS.text 유지
+- [x] `app/(tabs)/_layout.tsx` — 다크 탭 바: tabBarActiveTintColor=gold, tabBarInactiveTintColor='rgba(255,255,255,0.45)', tabBar bg=#0C0C14, trade 탭 "사고/팔기" pricetag-outline 아이콘, 즉시매입 센터 버튼 gold 색상
+- [x] `app/(tabs)/index.tsx` — 완전 리라이트: Quick Actions 4개 수평(54x54 아이콘), MARKET 수평스크롤 SparkLine 카드(5개), 프리미엄 다크 배너(금색 레이블+흰 헤드라인+2버튼), MARKETPLACE/NEWS/COMMUNITY 카드형 리스트
+- [x] 4개 탭 헤더 dark prop: exchange.tsx, buyback.tsx, trade.tsx(+제목 변경), mypage/index.tsx
+- [x] TypeScript 컴파일 검증 통과 (tsc --noEmit)
+
+### 핵심 패턴
+```typescript
+// Header dark 모드
+<Header title="WATCHOUT" dark right={<NotificationBell color="#FFFFFF" />} />
+
+// 탭 바 골드 액센트
+tabBarActiveTintColor: COLORS.gold,
+tabBarInactiveTintColor: 'rgba(255,255,255,0.45)',
+backgroundColor: COLORS.tabBg,  // #0C0C14
+
+// 홈 섹션 레이블 패턴
+<Text style={{ fontSize: 10, fontWeight: '700', letterSpacing: 1.2, color: COLORS.gold }}>
+  MARKET
+</Text>
+<Text style={{ fontSize: 18, fontWeight: '800' }}>실시간 시세</Text>
+```
+
+### 수정된 파일 (7개)
+- `lib/constants.ts`
+- `components/common/Header.tsx`
+- `components/common/NotificationBell.tsx`
+- `app/(tabs)/_layout.tsx`
+- `app/(tabs)/index.tsx`
+- `app/(tabs)/exchange.tsx`, `buyback.tsx`, `trade.tsx`, `mypage/index.tsx` (4개 dark prop)
+
+---
+
+## 2026-02-23 — SESSION 17: 관심 매물 찜 기능
+
+### 완료
+- [x] `supabase/migrations/00008_favorites.sql` — favorites(id, user_id FK, trade_post_id FK, UNIQUE 제약), RLS 3개(조회/추가/삭제), 인덱스 2개
+- [x] `store/useFavoriteStore.ts` — favoriteIds[], fetchFavorites(Supabase 미연결 시 경고만), toggleFavorite(optimistic update — 즉시 UI 반영 후 Supabase 동기화, 실패해도 로컬 유지), isFavorite(id)
+- [x] `components/trade/TradeCard.tsx` — isFavorite/onFavoritePress optional prop 추가, 이미지 하단 우측에 28px 원형 하트 버튼 오버레이 (반투명 흰 배경)
+- [x] `app/trade/[id].tsx` — 하단 고정 바 하트 버튼: requireAuth + toggleFavorite, 찜 상태에 따라 heart(빨간)/heart-outline 토글
+- [x] `app/(tabs)/trade.tsx` — useFavoriteStore import, isLoggedIn useEffect → fetchFavorites, handleFavoriteToggle(requireAuth + toggleFavorite), TradeCard에 isFavorite/onFavoritePress prop 전달
+- [x] `app/(tabs)/mypage/favorites.tsx` — 완전 재구현: 비로그인/빈 상태/목록 3분기, tradeItems × favoriteIds 필터링, 2컬럼 TradeCard 그리드, Header 공통 컴포넌트 사용
+- [x] TypeScript 컴파일 검증 통과 (tsc --noEmit)
+
+### 핵심 패턴
+```typescript
+// Optimistic update: 즉시 UI 반영 → Supabase 동기화 → 실패해도 유지
+const alreadyFav = get().isFavorite(tradePostId);
+set(state => ({
+  favoriteIds: alreadyFav
+    ? state.favoriteIds.filter(id => id !== tradePostId)
+    : [...state.favoriteIds, tradePostId],
+}));
+// then try Supabase...
+
+// TradeCard 하트 버튼 — stopPropagation으로 카드 클릭과 분리
+<TouchableOpacity
+  onPress={(e) => { e.stopPropagation?.(); onFavoritePress(); }}
+/>
+```
+
+### 생성된 파일 (2개)
+- `supabase/migrations/00008_favorites.sql`
+- `store/useFavoriteStore.ts`
+
+### 수정된 파일 (4개)
+- `components/trade/TradeCard.tsx`
+- `app/trade/[id].tsx`
+- `app/(tabs)/trade.tsx`
+- `app/(tabs)/mypage/favorites.tsx`
+
+---
+
+## 2026-02-23 — SESSION 16 후속: 탭바 버그 수정 + Mock 채팅 데이터
+
+### 완료
+- [x] **탭바 사라짐 버그 근본 수정** — (tabs) nested Stack 패턴으로 채팅/알림 라우트 이동
+  - `app/(tabs)/chat/_layout.tsx` 신규 (nested Stack: index, [roomId])
+  - `app/(tabs)/notifications/_layout.tsx` 신규 (nested Stack: index)
+  - `app/(tabs)/_layout.tsx` — chat, notifications Tabs.Screen(href:null) 추가
+  - `app/_layout.tsx` — 구 루트 레벨 chat/notifications/mypage/notification-settings 라우트 제거
+  - 기존 파일 이동: `app/chat/*` → `app/(tabs)/chat/*`, `app/notifications/*` → `app/(tabs)/notifications/*`, `app/mypage/notification-settings.tsx` → `app/(tabs)/mypage/notification-settings.tsx`
+- [x] **Mock 채팅 데이터 fallback** — Supabase 미연결 시 자동 시드
+  - `store/useChatStore.ts` — `createMockRooms(userId)` 채팅방 2개 (Rolex 서브마리너, Omega 스피드마스터)
+  - `store/useChatStore.ts` — `createMockMessages(roomId, userId)` room1=5개/room2=3개 메시지 (자연스러운 매물 문의 대화)
+  - fetchChatRooms: Supabase 오류 시 mock fallback
+  - fetchMessages: Supabase 오류 시 mock fallback
+  - sendMessage: Supabase 오류 시 로컬 state에 직접 추가 (`_localMsgId` 카운터)
+  - createOrGetRoom: state 먼저 확인 → Supabase → 실패 시 로컬 방 생성
+  - markRoomAsRead: 로컬 먼저 업데이트 후 Supabase 시도 (실패해도 무시)
+- [x] `lib/mockData.ts` — MOCK_TRADE_ITEMS 7개에 `userId: 'mock-seller-00N'` 추가 (채팅 버튼 동작)
+- [x] TypeScript 컴파일 검증 통과 (tsc --noEmit)
+
+### Mock 채팅 대화 내용
+```
+Room 1 (Rolex 서브마리너 126610LN — watchman):
+  나: "서브마리너 아직 판매 중인가요?"
+  watchman: "네, 판매 중입니다! 언제든지 연락 주세요."
+  나: "직거래 가능할까요? 강남역 쪽 괜찮으신지요"
+  watchman: "강남역 가능합니다. 주말 오후 시간 어떠세요?"
+  나: "토요일 오후 2시 괜찮습니다!"
+
+Room 2 (Omega 스피드마스터 310.30.42 — omega_fan):
+  나: "스피드마스터 가격 조금 조정 가능할까요?"
+  omega_fan: "5,800,000원까지는 가능합니다 :)"
+  나: "감사합니다. 보증서 유효기간 확인 부탁드릴게요"
+```
+
+### 탭바 패턴 (mypage, collection, chat, notifications 공통)
+```
+app/(tabs)/[feature]/
+  _layout.tsx   ← Stack (screenOptions: headerShown: false)
+  index.tsx     ← 메인 화면
+  [sub].tsx     ← 서브 화면들
+
+app/(tabs)/_layout.tsx:
+  <Tabs.Screen name="[feature]" options={{ href: null }} />
+```
+
+### 수정된 파일 (5개)
+- `store/useChatStore.ts`
+- `lib/mockData.ts`
+- `app/(tabs)/_layout.tsx`
+- `app/(tabs)/mypage/_layout.tsx`
+- `app/_layout.tsx`
+
+### 추가 생성된 파일 (5개)
+- `app/(tabs)/chat/_layout.tsx`
+- `app/(tabs)/notifications/_layout.tsx`
+- `app/(tabs)/chat/index.tsx` (구 app/chat/index.tsx 이동)
+- `app/(tabs)/chat/[roomId].tsx` (구 app/chat/[roomId].tsx 이동)
+- `app/(tabs)/notifications/index.tsx` (구 app/notifications/index.tsx 이동)
+- `app/(tabs)/mypage/notification-settings.tsx` (구 app/mypage/notification-settings.tsx 이동)
+
+---
+
+## 2026-02-23 — SESSION 16: 1:1 실시간 채팅 (Supabase Realtime)
+
+### 완료
+- [x] supabase/migrations/00007_chat.sql — chat_rooms + chat_messages 테이블, RLS 4개 정책, REPLICA IDENTITY FULL, notifications type CHECK에 'chat' 추가
+- [x] store/useChatStore.ts — ChatRoom/ChatMessage interface, fetchChatRooms/fetchMessages/sendMessage/createOrGetRoom/markRoomAsRead/subscribeToRoom(Realtime)/unsubscribeFromRoom
+- [x] app/chat/index.tsx — 채팅방 목록 (ScrollView+map, 아바타, unread 뱃지, 비로그인 가드)
+- [x] app/chat/[roomId].tsx — 실시간 채팅 화면 (날짜 구분선, 시스템/내/상대 버블, KeyboardAvoidingView, scrollToEnd)
+- [x] types/index.ts — MockTradeItem에 userId?: string 추가
+- [x] store/useNotificationStore.ts — NotificationType에 'chat' 추가
+- [x] store/useTradeStore.ts — fetchTradePosts에 userId: post.user_id 매핑
+- [x] app/trade/[id].tsx — handleChatPress 실제 동작 (requireAuth + createOrGetRoom + router.push), isMyPost 버튼 비활성화
+- [x] app/(tabs)/mypage/index.tsx — 채팅 메뉴 (나의 활동 첫 번째) + totalUnread 뱃지
+- [x] app/_layout.tsx — chat, chat/[roomId] 라우트 추가
+- [x] app/mypage/notification-settings.tsx — chat 알림 토글 (SETTINGS 배열 + initial state)
+- [x] app/notifications/index.tsx — TYPE_ICON에 chat: { name: 'chatbox', ... } 추가
+- [x] TypeScript 컴파일 검증 통과 (tsc --noEmit)
+
+### 생성된 파일 (4개)
+- `supabase/migrations/00007_chat.sql`
+- `store/useChatStore.ts`
+- `app/chat/index.tsx`
+- `app/chat/[roomId].tsx`
+
+### 수정된 파일 (8개)
+- `types/index.ts`, `store/useNotificationStore.ts`, `store/useTradeStore.ts`
+- `app/trade/[id].tsx`, `app/(tabs)/mypage/index.tsx`, `app/_layout.tsx`
+- `app/mypage/notification-settings.tsx`, `app/notifications/index.tsx`
+
+### 핵심 패턴
+```typescript
+// Realtime 구독 — 모듈 레벨 채널 (Zustand state에 저장 불가)
+let _channel: RealtimeChannel | null = null;
+
+subscribeToRoom: (roomId, onNewMessage) => {
+  if (_channel) supabase.removeChannel(_channel);
+  _channel = supabase
+    .channel(`room-${roomId}`)
+    .on('postgres_changes', {
+      event: 'INSERT', schema: 'public',
+      table: 'chat_messages', filter: `room_id=eq.${roomId}`,
+    }, (payload) => {
+      const msg = mapMessage(payload.new);
+      set(s => ({ currentMessages: [...s.currentMessages, msg] }));
+      onNewMessage(msg);
+    }).subscribe();
+},
+
+// createOrGetRoom — UPSERT 패턴
+const { data: existing } = await supabase.from('chat_rooms')
+  .select('id').eq('trade_post_id', tradePostId).eq('buyer_id', user.id).maybeSingle();
+if (existing) return existing.id;
+// → INSERT + 시스템 메시지
+
+// 날짜 구분선 (렌더링 루프 내 변수)
+let lastDateLabel = '';
+// ...
+const dateLabel = getDateLabel(msg.createdAt);
+const showDate = dateLabel !== lastDateLabel;
+if (showDate) lastDateLabel = dateLabel;
+```
+
+### ⚠️ Supabase 설정 필요
+- 00001~00007 SQL 실행
+- Supabase 대시보드 → Database → Replication → chat_messages 테이블 Realtime 활성화 확인 (SQL의 REPLICA IDENTITY FULL 보완)
+
+---
+
+## 2026-02-23 — SESSION 15: 알림 시스템 구현
+
+### 완료
+- [x] supabase/migrations/00006_notifications.sql — notifications 테이블 + RLS 4개 정책 + 복합 인덱스
+- [x] store/useNotificationStore.ts — NotificationType(6종), Notification 인터페이스, Zustand store
+- [x] lib/notifications.ts — createNotification 헬퍼 (서버사이드 알림 생성용)
+- [x] components/common/NotificationBell.tsx — 뱃지(최대 99+, 빨간원), /notifications 이동
+- [x] components/common/Header.tsx — default fallback → NotificationBell 교체
+- [x] app/notifications/index.tsx — 6종 타입 아이콘, unread 금색 dot, 전체 읽음, 빈 상태
+- [x] app/mypage/notification-settings.tsx — 6종 Switch, AsyncStorage 영구 저장
+- [x] app/(tabs)/mypage/index.tsx — 알림 설정 Switch → 설정 페이지 navigation
+- [x] app/_layout.tsx — 라우트 2개 추가
+- [x] TypeScript 컴파일 검증 통과 (tsc --noEmit)
+
+### 주요 패턴
+```typescript
+// NotificationBell — store 직접 구독 + router 내부 보유
+const NotificationBell = () => {
+  const { unreadCount } = useNotificationStore();
+  const router = useRouter();
+  // badge: position absolute, top:0, right:0
+};
+
+// Header — fallback만 교체, interface 변경 없음
+{right ?? <NotificationBell />}
+
+// notification-settings — AsyncStorage 키: notif_<type>
+await AsyncStorage.setItem(`notif_${type}`, String(value));
+```
+
+---
+
+## 2026-02-23 — SESSION 14: 로그인 가드 통일 + 이미지 업로드 실제 구현
+
+### 완료
+- [x] lib/authGuard.ts — requireAuth(router: Router, isLoggedIn: boolean, label?: string): boolean 생성
+- [x] app/(tabs)/trade.tsx — requireAuth 적용, console.log 제거, Alert import 제거
+- [x] app/(tabs)/community.tsx — 동일
+- [x] app/trade/create.tsx — requireAuth + expo-image-picker 사진 선택 + 업로드 + 미리보기
+- [x] app/(tabs)/mypage/index.tsx — 인라인 requireLogin 헬퍼 삭제 → requireAuth 교체
+- [x] components/buyback/BuybackSheet.tsx — Step4 사진 3슬롯 실제 구현 (gallerry → buyback-images → 미리보기)
+- [x] components/exchange/ExchangeSheet.tsx — Step3 사진 5슬롯 실제 구현
+- [x] store/useExchangeStore.ts — uploadPhotos 액션 추가, submitRequest photos 실제 사용
+- [x] store/useTradeStore.ts — createTradePost에서 formData.photos.filter(Boolean) 사용
+- [x] store/useBuybackStore.ts — submitRequest에서 formData.photos.filter(Boolean) 사용
+- [x] TypeScript 컴파일 검증 통과 (tsc --noEmit)
+
+### 주요 패턴
+```typescript
+// lib/authGuard.ts
+import type { Router } from 'expo-router';
+export const requireAuth = (router: Router, isLoggedIn: boolean, label = '이 기능'): boolean => {
+  if (!isLoggedIn) {
+    Alert.alert('로그인 필요', `${label}은(는) 로그인 후 이용 가능합니다.`, [
+      { text: '취소', style: 'cancel' },
+      { text: '로그인', onPress: () => router.push('/auth/login') },
+    ]);
+    return false;
+  }
+  return true;
+};
+
+// 사진 업로드 패턴 (create.tsx, BuybackSheet, ExchangeSheet)
+const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: Images, allowsEditing: true, quality: 0.8 });
+if (!result.canceled) {
+  const urls = await uploadImages([result.assets[0].uri]);
+  if (urls.length > 0) setFormField('photos', [...photos.slice(0, i), urls[0], ...photos.slice(i + 1)]);
+}
+```
+
+### 생성된 파일 (1개)
+- `lib/authGuard.ts`
+
+### 수정된 파일 (10개)
+- `app/(tabs)/trade.tsx`, `app/(tabs)/community.tsx` — 인라인 체크 → requireAuth, console.log 제거
+- `app/trade/create.tsx` — requireAuth + ImagePicker + 사진 미리보기
+- `app/(tabs)/mypage/index.tsx` — requireLogin 헬퍼 삭제 → requireAuth
+- `components/buyback/BuybackSheet.tsx` — Step4 사진 업로드
+- `components/exchange/ExchangeSheet.tsx` — Step3 사진 업로드
+- `store/useTradeStore.ts`, `store/useBuybackStore.ts`, `store/useExchangeStore.ts` — photos 실제 적용
+
+### 스킵 항목
+- BuybackSheet "기타" 브랜드: 이미 구현됨 (SESSION 12에서 완료)
+
+---
+
+## 2026-02-23 — SESSION 13: MY 페이지 완성 + 프로필 편집
+
+### 완료
+- [x] expo-image-picker 패키지 설치
+- [x] store/useAuthStore.ts — updateProfile, uploadAvatar 액션 추가
+- [x] store/useTradeStore.ts — MyTradeItem interface, myTrades/myTradesLoading state, fetchMyTrades(userId) 추가
+- [x] store/useCommunityStore.ts — MyPost interface, myPosts/myPostsLoading state, fetchMyPosts(userId) 추가
+- [x] store/useBuybackStore.ts — MyRequest interface, REQUEST_STATUS_LABEL/COLOR(exported), myRequests/myRequestsLoading state, fetchMyRequests(userId) 추가
+- [x] app/(tabs)/mypage.tsx — 완전 리디자인 (프로필 카드, 활동/설정 섹션, 비로그인 분기)
+- [x] app/mypage/edit-profile.tsx — 신규 생성 (ImagePicker, 닉네임/bio 편집, 저장)
+- [x] app/mypage/my-trades.tsx — 신규 생성 (내 매물 리스트 + 상태 배지)
+- [x] app/mypage/my-posts.tsx — 신규 생성 (내 게시글 리스트 + 카테고리 배지)
+- [x] app/mypage/my-requests.tsx — 신규 생성 (매입/교환 내역 + 타입/상태 배지)
+- [x] app/_layout.tsx — mypage/* 라우트 4개 추가
+- [x] TypeScript 컴파일 검증 통과 (tsc --noEmit)
+
+### 생성된 파일 (4개)
+- `app/mypage/edit-profile.tsx` — 프로필 편집 (~300줄)
+- `app/mypage/my-trades.tsx` — 내 매물 리스트 (~240줄)
+- `app/mypage/my-posts.tsx` — 내 게시글 리스트 (~175줄)
+- `app/mypage/my-requests.tsx` — 매입/교환 내역 (~180줄)
+
+### 수정된 파일 (6개)
+- `store/useAuthStore.ts` — updateProfile, uploadAvatar 추가
+- `store/useTradeStore.ts` — MyTradeItem, fetchMyTrades 추가
+- `store/useCommunityStore.ts` — MyPost, fetchMyPosts 추가
+- `store/useBuybackStore.ts` — MyRequest, REQUEST_STATUS_LABEL/COLOR, fetchMyRequests 추가
+- `app/(tabs)/mypage.tsx` — 완전 리디자인
+- `app/_layout.tsx` — mypage/* 4개 라우트 추가
+
+### MY 페이지 구조 (리디자인)
+```
+로그인 상태:
+  프로필 카드 (아바타 64px / person-circle 아이콘 + 닉네임 + Lv.N 배지 + bio + [프로필 편집] 버튼)
+  활동 섹션:
+    내 컬렉션 → /collection
+    내 매물   → /mypage/my-trades
+    내 게시글 → /mypage/my-posts
+    매입/교환 내역 → /mypage/my-requests
+    관심 매물 → Alert (다음 업데이트)
+  설정 섹션:
+    알림 설정 (Switch 토글)
+    이용약관 / 개인정보처리방침 / 앱 정보 (Alert)
+    로그아웃 (Confirm Alert)
+
+비로그인 상태:
+  로그인 유도 카드 + [로그인하기] 버튼
+  설정 섹션만 표시 (로그아웃 → [로그인하기])
+```
+
+### 각 서브페이지 구조
+- **edit-profile**: 아바타(원형 88px + 사진변경 버튼) → 닉네임 TextInput → bio TextInput(3줄, 글자수 카운터) → [저장]
+- **my-trades**: 빈상태(매물등록하기 CTA) 또는 리스트 (80×80 watch-outline 박스, 판매/구매 배지, 브랜드 모델, 가격, 상태배지, 시간)
+- **my-posts**: 빈상태(글쓰기 CTA) 또는 리스트 (카테고리 배지, 제목, 💬/❤️/시간 메타)
+- **my-requests**: 빈상태 또는 리스트 (타입배지 좌측, 브랜드 모델, 시간, 상태배지 우측)
+
+### 기술적 특징
+- **updateProfile**: supabase.from('users').update({ nickname, bio, avatar_url, updated_at }) + set({ user: {...} })
+- **uploadAvatar**: supabase.storage.from('avatars').upload(userId/avatar.jpg, uri, { upsert: true }) + getPublicUrl
+- **ImagePicker**: requestMediaLibraryPermissionsAsync → launchImageLibraryAsync(aspect:[1,1], quality:0.7)
+- **REQUEST_STATUS_LABEL/COLOR**: useBuybackStore에서 export → my-requests.tsx에서 import
+- **requireLogin(label, action)**: MY 페이지 내부 헬퍼 — 비로그인 시 Alert(로그인 화면 유도)
+- **TRADE_STATUS_LABEL/COLOR**: my-trades.tsx 파일 내 로컬 상수 (active→판매중/green, reserved→예약중/orange, sold→거래완료/sub)
+
+### 메모
+- Supabase Storage 'avatars' 버킷은 00003_storage_buckets.sql에 이미 정의됨
+- updateProfile 호출 시 updated_at 갱신 (users 테이블에 해당 컬럼 필요)
+- MyTradeItem.type 필드는 trade_posts.type 컬럼 ('sell'/'buy') — status와 별개
+
+---
+
+## 2026-02-23 — SESSION 12: 교환거래 페이지 + 탭 구조 개편
+
+### 완료
+- [x] supabase/migrations/00005_exchange_trade.sql — buyback_requests 교환거래 컬럼 추가
+- [x] store/useExchangeStore.ts — 4단계 폼 상태 (Zustand, BuybackStore 패턴 동일)
+- [x] components/exchange/ExchangeSheet.tsx — 4단계 모달 바텀시트
+- [x] app/(tabs)/exchange.tsx — 교환거래 소개 페이지 (다크 네이비 + 골드)
+- [x] app/(tabs)/_layout.tsx — 탭 5개 개편 + 센터 원형 버튼
+- [x] app/(tabs)/index.tsx — 시세 배너 + 교환거래 미니배너 추가
+- [x] TypeScript 컴파일 검증 통과 (tsc --noEmit)
+
+### 생성된 파일 (4개)
+- `supabase/migrations/00005_exchange_trade.sql`
+- `store/useExchangeStore.ts`
+- `components/exchange/ExchangeSheet.tsx`
+- `app/(tabs)/exchange.tsx`
+
+### 수정된 파일 (2개)
+- `app/(tabs)/_layout.tsx`
+- `app/(tabs)/index.tsx`
+
+### DB 변경 (00005_exchange_trade.sql)
+```sql
+ALTER TABLE buyback_requests
+  ADD COLUMN IF NOT EXISTS type text NOT NULL DEFAULT 'buyback';
+  -- CHECK (type IN ('buyback', 'exchange'))
+  ADD COLUMN IF NOT EXISTS wanted_brand text,
+  ADD COLUMN IF NOT EXISTS wanted_model text,
+  ADD COLUMN IF NOT EXISTS wanted_condition text,
+  ADD COLUMN IF NOT EXISTS wanted_note text,
+  ADD COLUMN IF NOT EXISTS kakao_id text,
+  ADD COLUMN IF NOT EXISTS contact_method text;
+-- condition 체크: S/A/B/C (C급 신규 추가)
+```
+
+### 교환거래 페이지 구조
+```
+exchange.tsx
+  ├─ Hero (다크 네이비 #1A1A2E + 골드 배지 + repeat 아이콘)
+  ├─ Trust Badges 3개 (가로 스크롤)
+  ├─ 진행 과정 4단계 (타임라인: 01신청→02검토→03딜→04확정)
+  ├─ Why WATCHOUT 2×2 그리드
+  ├─ 교환 가능 브랜드 태그 (flexWrap)
+  ├─ FAQ 아코디언 4개
+  ├─ 하단 CTA 배너 (다크 네이비)
+  └─ ExchangeSheet 모달 (sheetVisible 상태)
+```
+
+### ExchangeSheet 4단계
+- Step 1 — 내 시계: 브랜드 칩(기타→TextInput), 모델, 컨디션 S/A/B/C 2×2
+- Step 2 — 원하는 시계: 브랜드 칩(기타→TextInput), 모델, 컨디션(선택), 요청사항
+- Step 3 — 사진+상세: 5개 사진 슬롯(placeholder), 연도, 구성품(풀세트/풀박스/시계만), 특이사항
+- Step 4 — 연락처+확인: 전화번호(필수), 카카오ID(선택), 연락방법 칩, 요청 요약 박스(↔), 개인정보 동의 체크박스
+
+### 탭 구조 변경
+```
+기존 6탭: 홈 | 시세 | 즉시매입 | 시계거래 | 커뮤니티 | MY
+변경 5탭: 홈 | 교환거래 | [즉시매입 센터버튼] | 시계거래 | MY
+숨김(href:null): 시세, 커뮤니티 (파일 유지, router.push 접근 가능)
+```
+
+### 홈 화면 추가 섹션
+- 실시간 시세 Top3: MOCK_WATCHES 3개, 순위 + 브랜드/모델 + 가격/변동률, → /price
+- 교환거래 미니배너: 다크 네이비(#1A1A2E), repeat 아이콘 골드, → /(tabs)/exchange
+
+---
+
+## 2026-02-23 — SESSION 11: 시세 크롤러 구현 (TypeScript/Node.js)
+
+### 완료
+- [x] crawlers/tsconfig.json — Node.js용 TS 설정 (Expo tsconfig와 완전 분리)
+- [x] crawlers/types.ts — CrawledPrice, WatchTarget, SaveResult 타입 + WATCH_TARGETS(6개) + getTodayDate()
+- [x] crawlers/hisigan.ts — 하이시간 크롤러 (axios + cheerio, KRW 수집)
+- [x] crawlers/chrono24.ts — Chrono24 크롤러 (axios + cheerio, EUR 수집, 중간가 계산)
+- [x] crawlers/savePrices.ts — Supabase Node.js 클라이언트 + watch_prices INSERT + 중복 스킵
+- [x] crawlers/index.ts — 통합 실행기 runAll() (하이시간 → Chrono24 순차 실행)
+- [x] crawlers/run.ts — 진입점 (dotenv 로드 → runAll)
+- [x] package.json — axios/cheerio/dotenv(dep) + ts-node(dev) 추가 + "crawl" 스크립트
+- [x] TypeScript 컴파일 검증 통과 (tsc --project crawlers/tsconfig.json --noEmit)
+- [x] HANDOFF.md 기술 스택 업데이트 (Python → TypeScript/Node.js)
+
+### 생성된 파일 (7개)
+- `crawlers/tsconfig.json` — CommonJS + ES2020 + strict (Expo tsconfig와 분리)
+- `crawlers/types.ts` — 공유 타입 정의 + 6개 시계 타겟 설정
+- `crawlers/hisigan.ts` — 하이시간 시세 크롤러
+- `crawlers/chrono24.ts` — Chrono24 시세 크롤러
+- `crawlers/savePrices.ts` — Supabase 저장 로직
+- `crawlers/index.ts` — 통합 실행기
+- `crawlers/run.ts` — 진입점
+
+### 수정된 파일 (1개)
+- `package.json` — 패키지 4개 추가 + crawl 스크립트 추가
+
+### 기술적 설계
+
+**크롤러 아키텍처:**
+```
+npm run crawl
+  └─ crawlers/run.ts (dotenv.config())
+       └─ crawlers/index.ts (runAll)
+            ├─ crawlers/hisigan.ts → CrawledPrice[] (KRW)
+            ├─ crawlers/chrono24.ts → CrawledPrice[] (EUR)
+            └─ crawlers/savePrices.ts → watch_prices INSERT
+```
+
+**핵심 설계 결정:**
+- **Python → TypeScript**: Expo 프로젝트와 같은 언어, 타입 공유 용이
+- **lib/supabase.ts 미사용**: React Native AsyncStorage adapter는 Node.js 환경 불호환 → crawlers 전용 createClient() 사용
+- **Expo tsconfig 분리**: expo/tsconfig.base는 React Native 전용 → crawlers/tsconfig.json에서 CommonJS 별도 설정
+- **dotenv**: .env의 EXPO_PUBLIC_* 변수 재사용 (별도 환경 파일 불필요)
+- **중복 방지**: UNIQUE(watch_id, source, recorded_date) 제약 → INSERT 후 error.code === '23505' 체크
+
+**크롤링 전략:**
+- 하이시간: 검색 URL + 첫 번째 결과 가격 추출 (KRW)
+- Chrono24: 검색 결과 목록 + 중간가 계산 (EUR, 상/하위 10% 제외)
+- 요청 간격: 하이시간 1.5초, Chrono24 2초 (서버 부하 방지)
+- 오류 격리: 단일 watch 실패 시 해당 항목만 스킵, 나머지 계속 진행
+
+**WATCH_TARGETS 6개:**
+| 브랜드 | 모델 | Ref |
+|--------|------|-----|
+| Rolex | Submariner | 126610LN |
+| Rolex | Daytona | 116500LN |
+| Rolex | GMT-Master II | 126710BLNR |
+| Rolex | Datejust | 126234 |
+| Omega | Speedmaster | 311.30.42.30.01.005 |
+| AP | Royal Oak | 15500ST |
+
+### 실행 방법
+```bash
+# 크롤러 실행
+npm run crawl
+
+# 타입 검증만
+npx tsc --project crawlers/tsconfig.json --noEmit
+```
+
+### ⚠️ 다음 세션 필수 작업
+- **CSS 선택자 검증**: hisigan.ts와 chrono24.ts에 `// TODO: 실제 선택자 확인 필요` 주석 있음
+  - 각 사이트 실제 HTML 구조 확인 후 선택자 수정 필요
+  - 하이시간: 동적 렌더링이면 cheerio 대신 puppeteer 필요
+  - Chrono24: 접근 차단 시 User-Agent 로테이션 또는 다른 방법 검토
+- **Supabase 마이그레이션**: watch_prices 테이블 없으면 savePrices 실패
+  - 00001_create_tables.sql 실행 후 watches 시드 데이터 삽입 필요
+
+### 메모
+- 크롤러는 앱 코드(React Native)에 전혀 영향 없음 — 완전 분리된 Node.js 스크립트
+- Chrono24 EUR 가격은 KRW 환산 없이 그대로 저장 (source='chrono24'로 구분 가능)
+- 추후 cron job (Mac launchd) 또는 Supabase Edge Function으로 자동화 가능
+
+---
+
 ## 2026-02-23 — SESSION 10: 전체 레이아웃 미세 조정 + UI 통일
 
 ### 완료

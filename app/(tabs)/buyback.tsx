@@ -45,7 +45,7 @@ export default function BuybackScreen() {
 
   return (
     <View style={styles.container}>
-      <Header title="즉시매입" />
+      <Header title="즉시매입" dark />
       <ScrollView showsVerticalScrollIndicator={false}>
 
         {/* Hero 섹션 */}

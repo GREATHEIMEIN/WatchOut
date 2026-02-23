@@ -352,6 +352,7 @@ export interface MockTradeItem {
   authorRating?: number;
   views?: number;
   status?: 'active' | 'reserved' | 'sold';
+  userId?: string;  // trade_posts.user_id (판매자 UUID, 채팅 상대 식별용)
 }
 
 /** 시계용품 매물 */

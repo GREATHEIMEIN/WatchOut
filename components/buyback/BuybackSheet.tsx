@@ -1,7 +1,9 @@
 // 즉시매입 신청 바텀시트 — v5 BuybackSheet 기반
 
 import {
+  ActivityIndicator,
   Alert,
+  Image,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -12,11 +14,13 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING, RADIUS, BRANDS, CONDITIONS, KIT_OPTIONS } from '@/lib/constants';
 import { useBuybackStore } from '@/store/useBuybackStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import type { Condition } from '@/types';
+import { useState } from 'react';
 
 const TOTAL_STEPS = 5;
 const BRAND_OPTIONS = [...BRANDS, '기타'] as const;
@@ -31,10 +35,39 @@ const BuybackSheet = ({ visible, onClose }: BuybackSheetProps) => {
     step, formData, done,
     setStep, setFormField, toggleKit, setDone, reset, isStepValid,
   } = useBuybackStore();
+  const [uploadingSlot, setUploadingSlot] = useState<number | null>(null);
 
   const handleClose = () => {
     reset();
     onClose();
+  };
+
+  // 사진 슬롯별 선택 + 업로드
+  const handlePickPhoto = async (slotIndex: number) => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('권한 필요', '사진 접근 권한이 필요합니다');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.8,
+    });
+    if (!result.canceled) {
+      setUploadingSlot(slotIndex);
+      const uri = result.assets[0].uri;
+      const { uploadPhotos } = useBuybackStore.getState();
+      const urls = await uploadPhotos([uri]);
+      if (urls.length > 0) {
+        const newPhotos = [...formData.photos];
+        newPhotos[slotIndex] = urls[0];
+        setFormField('photos', newPhotos);
+      } else {
+        Alert.alert('오류', '사진 업로드에 실패했습니다');
+      }
+      setUploadingSlot(null);
+    }
   };
 
   const handleNext = async () => {
@@ -77,7 +110,9 @@ const BuybackSheet = ({ visible, onClose }: BuybackSheetProps) => {
       <Text style={styles.completionTitle}>즉시매입 신청 완료</Text>
 
       <View style={styles.summaryBox}>
-        <Text style={styles.summaryBrand}>{formData.brand} {formData.model}</Text>
+        <Text style={styles.summaryBrand}>
+          {formData.brand === '기타' ? formData.customBrand : formData.brand} {formData.model}
+        </Text>
         {formData.ref !== '' && <Text style={styles.summaryRef}>{formData.ref}</Text>}
         <Text style={styles.summaryDetail}>
           {formData.condition}급
@@ -117,6 +152,16 @@ const BuybackSheet = ({ visible, onClose }: BuybackSheetProps) => {
           );
         })}
       </View>
+      {formData.brand === '기타' && (
+        <TextInput
+          style={[styles.inputField, { marginTop: SPACING.md }]}
+          placeholder="브랜드명을 직접 입력해주세요"
+          placeholderTextColor={COLORS.sub}
+          value={formData.customBrand}
+          onChangeText={(v) => setFormField('customBrand', v)}
+          autoFocus
+        />
+      )}
     </View>
   );
 
@@ -207,16 +252,28 @@ const BuybackSheet = ({ visible, onClose }: BuybackSheetProps) => {
       <View>
         <Text style={styles.stepQuestion}>사진 첨부</Text>
         <View style={styles.photoGrid}>
-          {photoLabels.map((label) => (
-            <TouchableOpacity
-              key={label}
-              style={styles.photoBox}
-              onPress={() => Alert.alert('준비 중', '사진 기능은 다음 업데이트에서!')}
-            >
-              <Ionicons name="camera-outline" size={28} color={COLORS.sub} />
-              <Text style={styles.photoLabel}>{label}</Text>
-            </TouchableOpacity>
-          ))}
+          {photoLabels.map((label, i) => {
+            const uploadedUri = formData.photos[i];
+            const isUploading = uploadingSlot === i;
+            return (
+              <TouchableOpacity
+                key={label}
+                style={styles.photoBox}
+                onPress={() => handlePickPhoto(i)}
+              >
+                {isUploading ? (
+                  <ActivityIndicator size="small" color={COLORS.accent} />
+                ) : uploadedUri ? (
+                  <Image source={{ uri: uploadedUri }} style={styles.photoImage} />
+                ) : (
+                  <>
+                    <Ionicons name="camera-outline" size={28} color={COLORS.sub} />
+                    <Text style={styles.photoLabel}>{label}</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            );
+          })}
         </View>
         <Text style={styles.hintText}>최소 2장 (전면, 후면 필수)</Text>
       </View>
@@ -548,6 +605,11 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: COLORS.sub,
     fontWeight: '500',
+  },
+  photoImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: RADIUS.card,
   },
   // 하단 버튼
   buttonRow: {

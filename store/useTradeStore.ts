@@ -45,10 +45,24 @@ const INITIAL_FORM: TradeFormData = {
   photos: [],
 };
 
+interface MyTradeItem {
+  id: number;
+  brand: string;
+  model: string;
+  price: number;
+  status: string;
+  itemType: string;
+  type: string;
+  images: string[] | null;
+  createdAt: string;
+}
+
 interface TradeState {
   // 데이터
   tradeItems: MockTradeItem[];
   accessoryItems: MockAccessoryItem[];
+  myTrades: MyTradeItem[];
+  myTradesLoading: boolean;
 
   // 탭
   activeTab: ItemType;
@@ -83,6 +97,7 @@ interface TradeState {
 
   // Supabase 액션
   fetchTradePosts: (itemType: ItemType) => Promise<void>;
+  fetchMyTrades: (userId: string) => Promise<void>;
   createTradePost: () => Promise<{ success: boolean; error?: string }>;
   uploadImages: (uris: string[]) => Promise<string[]>;
 
@@ -100,6 +115,8 @@ interface TradeState {
 export const useTradeStore = create<TradeState>((set, get) => ({
   tradeItems: [],
   accessoryItems: [],
+  myTrades: [],
+  myTradesLoading: false,
   activeTab: 'watch',
   searchQuery: '',
   selectedBrand: '전체',
@@ -205,6 +222,41 @@ export const useTradeStore = create<TradeState>((set, get) => ({
   },
 
   /**
+   * 내 매물 조회 (userId 기준)
+   */
+  fetchMyTrades: async (userId: string) => {
+    set({ myTradesLoading: true });
+
+    try {
+      const { data, error } = await supabase
+        .from('trade_posts')
+        .select('id, brand, model, price, status, item_type, type, images, created_at')
+        .eq('user_id', userId)
+        .neq('status', 'deleted')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const myTrades: MyTradeItem[] = (data || []).map((post: any) => ({
+        id: post.id,
+        brand: post.brand || '',
+        model: post.model || '',
+        price: post.price,
+        status: post.status,
+        itemType: post.item_type,
+        type: post.type,
+        images: post.images,
+        createdAt: post.created_at,
+      }));
+
+      set({ myTrades, myTradesLoading: false });
+    } catch (error) {
+      console.error('fetchMyTrades error:', error);
+      set({ myTradesLoading: false });
+    }
+  },
+
+  /**
    * Supabase에서 매물 조회
    * trade_posts + users LEFT JOIN
    */
@@ -244,6 +296,7 @@ export const useTradeStore = create<TradeState>((set, get) => ({
         status: post.status,
         title: post.title || '',
         category: '워치와인더',
+        userId: post.user_id,
       }));
 
       if (itemType === 'watch') {
@@ -306,8 +359,8 @@ export const useTradeStore = create<TradeState>((set, get) => ({
     set({ loading: true, error: null });
 
     try {
-      // 1. 이미지 업로드 (현재는 skip)
-      const imageUrls: string[] = [];
+      // 1. formData.photos (이미 업로드된 URL 배열)
+      const imageUrls = formData.photos.filter(Boolean);
 
       // 2. DB INSERT
       const { error } = await supabase.from('trade_posts').insert({

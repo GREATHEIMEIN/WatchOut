@@ -7,6 +7,10 @@ import Header from '@/components/common/Header';
 import { COLORS, RADIUS, SPACING } from '@/lib/constants';
 import { formatPrice } from '@/lib/format';
 import { useTradeStore } from '@/store/useTradeStore';
+import { useAuthStore } from '@/store/useAuthStore';
+import { useChatStore } from '@/store/useChatStore';
+import { useFavoriteStore } from '@/store/useFavoriteStore';
+import { requireAuth } from '@/lib/authGuard';
 
 // 시세 배지 색상
 const BADGE_COLORS = {
@@ -19,12 +23,16 @@ export default function TradeDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { tradeItems, accessoryItems } = useTradeStore();
+  const { user, isLoggedIn } = useAuthStore();
+  const { createOrGetRoom } = useChatStore();
+  const { favoriteIds, toggleFavorite } = useFavoriteStore();
 
   // 시계와 용품 모두에서 검색
   const watchItem = tradeItems.find((t) => t.id === Number(id));
   const accessoryItem = accessoryItems.find((a) => a.id === Number(id));
   const isWatch = !!watchItem;
   const item = watchItem ?? accessoryItem;
+  const isFav = favoriteIds.includes(item?.id ?? -1);
 
   if (!item) {
     return (
@@ -60,6 +68,22 @@ export default function TradeDetailScreen() {
   const handleAlert = (feature: string) => {
     Alert.alert('준비 중', `${feature} 기능은 다음 업데이트에서 제공됩니다.`);
   };
+
+  // 채팅하기 — 로그인 확인 → 방 생성/조회 → 채팅 화면 이동
+  const handleChatPress = async () => {
+    if (!requireAuth(router, isLoggedIn, '채팅')) return;
+    if (!watchItem?.userId) {
+      Alert.alert('오류', '판매자 정보를 불러올 수 없습니다.');
+      return;
+    }
+    const roomId = await createOrGetRoom(item.id, watchItem.userId);
+    if (roomId) {
+      router.push(`/chat/${roomId}`);
+    }
+  };
+
+  // 본인 매물 여부
+  const isMyPost = isLoggedIn && watchItem?.userId && user?.id === watchItem.userId;
 
   return (
     <View style={styles.container}>
@@ -162,17 +186,31 @@ export default function TradeDetailScreen() {
       <View style={styles.bottomBar}>
         <TouchableOpacity
           style={styles.likeButton}
-          onPress={() => handleAlert('찜')}
+          onPress={() => {
+            if (!requireAuth(router, isLoggedIn, '관심 매물')) return;
+            toggleFavorite(item.id);
+          }}
+          activeOpacity={0.7}
         >
-          <Ionicons name="heart-outline" size={22} color={COLORS.text} />
+          <Ionicons
+            name={isFav ? 'heart' : 'heart-outline'}
+            size={22}
+            color={isFav ? COLORS.red : COLORS.text}
+          />
         </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.chatButton}
-          onPress={() => handleAlert('메시지')}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.chatButtonText}>판매자에게 메시지</Text>
-        </TouchableOpacity>
+        {isMyPost ? (
+          <View style={[styles.chatButton, styles.chatButtonDisabled]}>
+            <Text style={[styles.chatButtonText, { color: COLORS.sub }]}>내 매물입니다</Text>
+          </View>
+        ) : (
+          <TouchableOpacity
+            style={styles.chatButton}
+            onPress={handleChatPress}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.chatButtonText}>판매자에게 메시지</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
@@ -385,6 +423,9 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: RADIUS.button,
     alignItems: 'center',
+  },
+  chatButtonDisabled: {
+    backgroundColor: COLORS.tag,
   },
   chatButtonText: {
     fontSize: 15,

@@ -18,6 +18,8 @@ interface AuthState {
   logout: () => Promise<void>;
   setUser: (user: User | null) => void;
   setSession: (session: Session | null) => void;
+  updateProfile: (nickname: string, bio: string | null, avatarUrl: string | null) => Promise<{ success: boolean }>;
+  uploadAvatar: (imageUri: string) => Promise<string | null>;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -179,5 +181,51 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   logout: async () => {
     await supabase.auth.signOut();
     set({ user: null, session: null, isLoggedIn: false });
+  },
+
+  // 프로필 업데이트
+  updateProfile: async (nickname, bio, avatarUrl) => {
+    const { user } = get();
+    if (!user) return { success: false };
+
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({ nickname, bio, avatar_url: avatarUrl, updated_at: new Date().toISOString() })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      set({ user: { ...user, nickname, bio, avatarUrl } });
+      return { success: true };
+    } catch (error) {
+      console.error('updateProfile error:', error);
+      return { success: false };
+    }
+  },
+
+  // 아바타 이미지 업로드
+  uploadAvatar: async (imageUri) => {
+    const { user } = get();
+    if (!user) return null;
+
+    try {
+      const fileName = `${user.id}/avatar.jpg`;
+
+      const { error } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, imageUri as any, { upsert: true });
+
+      if (error) throw error;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+
+      return publicUrl;
+    } catch (error) {
+      console.error('uploadAvatar error:', error);
+      return null;
+    }
   },
 }));

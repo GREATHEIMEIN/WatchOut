@@ -7,6 +7,7 @@ import type { Condition } from '@/types';
 
 interface BuybackFormData {
   brand: string;
+  customBrand: string;    // '기타' 선택 시 직접 입력
   model: string;
   ref: string;
   year: string;
@@ -17,12 +18,41 @@ interface BuybackFormData {
   location: string;
 }
 
+interface MyRequest {
+  id: number;
+  brand: string;
+  model: string;
+  type: string;
+  status: string;
+  createdAt: string;
+}
+
+const REQUEST_STATUS_LABEL: Record<string, string> = {
+  pending: '접수',
+  contacted: '검토중',
+  visited: '방문완료',
+  completed: '완료',
+  cancelled: '취소',
+};
+
+const REQUEST_STATUS_COLOR: Record<string, string> = {
+  pending: '#8E8E93',
+  contacted: '#FF9500',
+  visited: '#FF9500',
+  completed: '#34C759',
+  cancelled: '#FF3B30',
+};
+
+export { REQUEST_STATUS_LABEL, REQUEST_STATUS_COLOR };
+
 interface BuybackState {
   step: number;
   formData: BuybackFormData;
   done: boolean;
   loading: boolean;
   error: string | null;
+  myRequests: MyRequest[];
+  myRequestsLoading: boolean;
   setStep: (step: number) => void;
   setFormField: <K extends keyof BuybackFormData>(key: K, value: BuybackFormData[K]) => void;
   toggleKit: (kit: string) => void;
@@ -33,10 +63,12 @@ interface BuybackState {
   isStepValid: () => boolean;
   submitRequest: () => Promise<{ success: boolean }>;
   uploadPhotos: (uris: string[]) => Promise<string[]>;
+  fetchMyRequests: (userId: string) => Promise<void>;
 }
 
 const INITIAL_FORM: BuybackFormData = {
   brand: '',
+  customBrand: '',
   model: '',
   ref: '',
   year: '',
@@ -53,6 +85,8 @@ export const useBuybackStore = create<BuybackState>((set, get) => ({
   done: false,
   loading: false,
   error: null,
+  myRequests: [],
+  myRequestsLoading: false,
 
   setStep: (step) => set({ step }),
 
@@ -81,7 +115,9 @@ export const useBuybackStore = create<BuybackState>((set, get) => ({
     const { step, formData } = get();
     switch (step) {
       case 1:
-        return formData.brand !== '';
+        if (formData.brand === '') return false;
+        if (formData.brand === '기타' && formData.customBrand.trim() === '') return false;
+        return true;
       case 2:
         return formData.model.trim() !== '';
       case 3:
@@ -92,6 +128,37 @@ export const useBuybackStore = create<BuybackState>((set, get) => ({
         return formData.phone.trim() !== '';
       default:
         return false;
+    }
+  },
+
+  /**
+   * 내 매입/교환 신청 내역 조회
+   */
+  fetchMyRequests: async (userId: string) => {
+    set({ myRequestsLoading: true });
+
+    try {
+      const { data, error } = await supabase
+        .from('buyback_requests')
+        .select('id, brand, model, type, status, created_at')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const myRequests: MyRequest[] = (data || []).map((req: any) => ({
+        id: req.id,
+        brand: req.brand,
+        model: req.model,
+        type: req.type || 'buyback',
+        status: req.status,
+        createdAt: req.created_at,
+      }));
+
+      set({ myRequests, myRequestsLoading: false });
+    } catch (error) {
+      console.error('fetchMyRequests error:', error);
+      set({ myRequestsLoading: false });
     }
   },
 
@@ -139,13 +206,16 @@ export const useBuybackStore = create<BuybackState>((set, get) => ({
     set({ loading: true, error: null });
 
     try {
-      // 1. 사진 업로드 (현재는 skip)
-      const photoUrls: string[] = [];
+      // 1. formData.photos (이미 업로드된 URL 배열)
+      const photoUrls = formData.photos.filter(Boolean);
 
       // 2. DB INSERT (user_id는 optional, 비회원도 가능)
+      const effectiveBrand =
+        formData.brand === '기타' ? formData.customBrand : formData.brand;
+
       const { error } = await supabase.from('buyback_requests').insert({
         user_id: user?.id || null,
-        brand: formData.brand,
+        brand: effectiveBrand,
         model: formData.model,
         reference_number: formData.ref || null,
         condition: formData.condition as Condition,

@@ -3,7 +3,6 @@
 import { useEffect } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   ScrollView,
   StyleSheet,
   Text,
@@ -17,8 +16,10 @@ import Header from '@/components/common/Header';
 import TradeCard from '@/components/trade/TradeCard';
 import AccessoryCard from '@/components/trade/AccessoryCard';
 import { COLORS, RADIUS, SPACING } from '@/lib/constants';
+import { requireAuth } from '@/lib/authGuard';
 import { useTradeStore } from '@/store/useTradeStore';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useFavoriteStore } from '@/store/useFavoriteStore';
 import type { ItemType, MockTradeItem, MockAccessoryItem } from '@/types';
 
 const TABS: { key: ItemType; label: string }[] = [
@@ -47,11 +48,23 @@ export default function TradeScreen() {
     getFilteredTradeItems,
     getFilteredAccessoryItems,
   } = useTradeStore();
+  const { isLoggedIn } = useAuthStore();
+  const { favoriteIds, fetchFavorites, toggleFavorite } = useFavoriteStore();
 
-  // Supabase에서 매물 데이터 로드
+  // 매물 데이터 + 찜 목록 로드
   useEffect(() => {
     fetchTradePosts(activeTab);
   }, [activeTab]);
+
+  useEffect(() => {
+    if (isLoggedIn) fetchFavorites();
+  }, [isLoggedIn]);
+
+  // 찜 토글 — 비로그인 시 로그인 유도
+  const handleFavoriteToggle = (tradePostId: number) => {
+    if (!requireAuth(router, isLoggedIn, '관심 매물')) return;
+    toggleFavorite(tradePostId);
+  };
 
   const filteredTrades = getFilteredTradeItems();
   const filteredAccessories = getFilteredAccessoryItems();
@@ -67,7 +80,7 @@ export default function TradeScreen() {
 
   return (
     <View style={styles.container}>
-      <Header title="시계거래" />
+      <Header title="사고/팔기" dark />
 
       {/* 탭 */}
       <View style={styles.tabRow}>
@@ -192,7 +205,12 @@ export default function TradeScreen() {
             <View style={styles.gridContainer}>
               {filteredTrades.map((item) => (
                 <View key={String(item.id)} style={styles.gridItem}>
-                  <TradeCard item={item} onPress={() => handlePressWatch(item)} />
+                  <TradeCard
+                    item={item}
+                    onPress={() => handlePressWatch(item)}
+                    isFavorite={favoriteIds.includes(item.id)}
+                    onFavoritePress={() => handleFavoriteToggle(item.id)}
+                  />
                 </View>
               ))}
             </View>
@@ -224,18 +242,8 @@ export default function TradeScreen() {
       <TouchableOpacity
         style={styles.fab}
         onPress={() => {
-          console.log('[Trade] 매물 등록 버튼 클릭됨!');
           const { isLoggedIn } = useAuthStore.getState();
-          console.log('[Trade] 로그인 상태:', isLoggedIn);
-
-          if (!isLoggedIn) {
-            console.log('[Trade] 비로그인 → 로그인 페이지로 이동');
-            router.push('/auth/login');
-            return;
-          }
-
-          console.log('[Trade] 로그인 상태 → /trade/create로 이동');
-          router.push('/trade/create');
+          if (requireAuth(router, isLoggedIn, '매물 등록')) router.push('/trade/create');
         }}
         activeOpacity={0.8}
       >

@@ -9,6 +9,8 @@ import type { MockTradeItem } from '@/types';
 interface TradeCardProps {
   item: MockTradeItem;
   onPress: () => void;
+  isFavorite?: boolean;
+  onFavoritePress?: () => void;
 }
 
 // 시세 배지 배경/텍스트 색상
@@ -18,7 +20,7 @@ const BADGE_COLORS = {
   red: { bg: '#FEF0F0', text: COLORS.red },
 } as const;
 
-export default function TradeCard({ item, onPress }: TradeCardProps) {
+export default function TradeCard({ item, onPress, isFavorite = false, onFavoritePress }: TradeCardProps) {
   const badgeColor = BADGE_COLORS[item.badge];
   const isSell = item.type === 'sell';
 
@@ -35,6 +37,24 @@ export default function TradeCard({ item, onPress }: TradeCardProps) {
         <View style={[styles.priceBadge, { backgroundColor: badgeColor.bg }]}>
           <Text style={[styles.priceBadgeText, { color: badgeColor.text }]}>{item.badgeText}</Text>
         </View>
+        {/* 찜 버튼 */}
+        {onFavoritePress && (
+          <TouchableOpacity
+            style={styles.heartBtn}
+            onPress={(e) => {
+              e.stopPropagation?.();
+              onFavoritePress();
+            }}
+            activeOpacity={0.75}
+            hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+          >
+            <Ionicons
+              name={isFavorite ? 'heart' : 'heart-outline'}
+              size={16}
+              color={isFavorite ? COLORS.red : COLORS.sub}
+            />
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* 정보 영역 */}
@@ -92,6 +112,17 @@ const styles = StyleSheet.create({
   priceBadgeText: {
     fontSize: 10,
     fontWeight: '600',
+  },
+  heartBtn: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.88)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   info: {
     padding: SPACING.md,
